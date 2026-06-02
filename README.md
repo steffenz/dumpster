@@ -8,8 +8,15 @@ when you visit one:
 - **Redirect** — you're sent to a calmer URL of your choosing.
 - **Stop page** — the site is replaced with a plain "site blocked" page.
 
-The wording on the warning bar and stop page is fully editable in the admin
-panel — use `{site}` anywhere you want the blocked domain to appear.
+You pick a **default action**, then **override it per-site**: each entry in the
+block list has its own action dropdown, so you can keep a stop page as the
+default while sending `vg.no` to `nrk.no` and showing only a warning on
+`finn.no`. Redirect sites can use the default destination or their own.
+
+The wording **and button labels** on the warning bar and stop page are fully
+editable in the admin panel — use `{site}` anywhere you want the blocked domain
+to appear. The panel follows your system **light/dark** theme automatically and
+flags unsaved changes (nothing applies until you hit **Save**).
 
 Ships with a starter list of Schibsted properties (VG, Aftenposten, Finn,
 Aftonbladet, SvD, Blocket, Tori, DBA, and more). The list is fully editable.
@@ -60,10 +67,9 @@ node tools/build.js
 ```
 
 This rewrites the manifest's scoped `host_permissions` and content-script
-`matches`, the static rule set (`rules/schibsted.json`), and
-`src/blocklist.data.js`. **Commit the regenerated files** — they ship in the
-repo so end users can load the download without running anything. Then reload
-the extension.
+`matches`, and `src/blocklist.data.js`. **Commit the regenerated files** — they
+ship in the repo so end users can load the download without running anything.
+Then reload the extension.
 
 ## Permissions — why no `<all_urls>`
 
@@ -78,30 +84,31 @@ install-time grant.
 | File | Role |
 | --- | --- |
 | `blocklist.json` | Source of truth for the default domains. |
-| `tools/build.js` | Generates manifest perms, the static ruleset, and `blocklist.data.js`. |
+| `tools/build.js` | Generates manifest perms and `blocklist.data.js`. |
 | `manifest.json` | Manifest V3 definition (generated perms; do not hand-edit the host lists). |
 | `src/blocklist.data.js` | Generated `DEFAULT_BLOCKLIST`, loaded everywhere. |
-| `src/common.js` | Shared storage, domain-matching, and permission helpers. |
-| `src/background.js` | Service worker. Toggles the static ruleset + maintains dynamic rules. |
-| `src/content.js` | Injects the warning bar (warning mode only), in a shadow root. |
-| `rules/schibsted.json` | Generated static `declarativeNetRequest` ruleset (stop-page mode). |
+| `src/common.js` | Shared storage, domain-matching, action-resolution, and permission helpers. |
+| `src/background.js` | Service worker. Maintains per-domain dynamic `declarativeNetRequest` rules. |
+| `src/content.js` | Injects the warning bar (for "warning" sites only), in a shadow root. |
 | `src/options.html/js` | The admin panel. |
-| `src/popup.html/js` | Toolbar quick-toggle (on/off + mode). |
+| `src/popup.html/js` | Toolbar quick-toggle (on/off + default action). |
 | `src/blocked.html/js` | The custom stop page. |
 | `src/pages.css` | Shared styling for the pages above. |
 | `assets/icon.svg` | Editable icon master (poop swirl + prohibition slash). |
 | `tools/render_icons.sh` | Rasterizes the SVG to `icons/icon{16,48,128}.png` (`./tools/render_icons.sh`). |
 
-The blocking engine is **hybrid**:
+The blocking engine resolves an **effective action per domain** — the site's
+override, or the global default — and applies each independently:
 
-- **Stop-page mode** uses the static ruleset for the shipped defaults (cleanest
-  for store review); user-added domains get dynamic rules, and any default you
-  remove gets a dynamic `allow` exemption.
-- **Redirect mode** disables the static ruleset and uses dynamic rules pointing
-  at your chosen URL.
-- **Warning mode** uses no rules — the content script shows the bar.
+- **redirect** / **stop page** sites get a dynamic `declarativeNetRequest`
+  redirect rule (to the custom/default URL, or the bundled stop page).
+- **warning** sites get no network rule; the content script draws the bar and
+  self-gates on the per-domain action.
 
-Redirect/stop-page modes intercept the request *before* the page loads (via
+This means the list can mix all three actions at once. Rules are built
+dynamically because each site can differ; there is no static ruleset.
+
+Redirect/stop-page actions intercept the request *before* the page loads (via
 declarativeNetRequest), so there's no flicker. Matching is suffix-based: `vg.no`
 also covers `www.vg.no` and any other subdomain.
 

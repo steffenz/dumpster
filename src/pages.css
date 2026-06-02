@@ -1,18 +1,46 @@
 /* Shared styles for the options page, popup, and block page. */
 
 :root {
+  color-scheme: light dark;
   --red: #dc2626;
   --red-dark: #b91c1c;
   --red-soft: #fef2f2;
   --ink: #1f2430;
   --ink-soft: #5b6473;
   --line: #e6e8ec;
+  --line-2: #cdd2da; /* stronger hairline (hover borders) */
   --bg: #f6f7f9;
   --card: #ffffff;
+  --field-bg: #ffffff; /* inputs / textareas */
+  --elev: #ffffff; /* ghost buttons */
+  --elev-hover: #f1f2f4;
+  --switch-off: #cbd0d8;
+  --chip-bg: var(--red-soft); /* .domain / code chips */
+  --chip-fg: var(--red-dark);
   --radius: 12px;
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
     Arial, sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --red: #ef4444;
+    --red-dark: #f87171;
+    --red-soft: #2a1618;
+    --ink: #e8eaed;
+    --ink-soft: #9aa3b2;
+    --line: #2c333f;
+    --line-2: #3b4350;
+    --bg: #0f1216;
+    --card: #1a1f29;
+    --field-bg: #11151c;
+    --elev: #222835;
+    --elev-hover: #2b323f;
+    --switch-off: #3a414e;
+    --chip-bg: #3a1d20;
+    --chip-fg: #fca5a5;
+  }
 }
 
 * {
@@ -57,19 +85,23 @@ h2 {
   background: var(--red-dark);
 }
 .btn-ghost {
-  background: #fff;
+  background: var(--elev);
   color: var(--ink);
   border-color: var(--line);
 }
 .btn-ghost:hover {
-  background: #f1f2f4;
+  background: var(--elev-hover);
+}
+.btn:disabled {
+  opacity: 0.55;
+  cursor: default;
 }
 
 .domain,
 code {
   font-family: var(--mono);
-  background: var(--red-soft);
-  color: var(--red-dark);
+  background: var(--chip-bg);
+  color: var(--chip-fg);
   padding: 1px 6px;
   border-radius: 5px;
   font-size: 0.92em;
@@ -116,7 +148,7 @@ code {
   position: relative;
   width: 44px;
   height: 26px;
-  background: #cbd0d8;
+  background: var(--switch-off);
   border-radius: 999px;
   transition: background 0.15s ease;
   flex: 0 0 auto;
@@ -228,7 +260,7 @@ code {
   transition: border-color 0.12s ease, background 0.12s ease;
 }
 .mode:hover {
-  border-color: #cdd2da;
+  border-color: var(--line-2);
 }
 .mode input {
   margin-top: 2px;
@@ -284,7 +316,7 @@ select {
   border-radius: 8px;
   padding: 10px 12px;
   width: 100%;
-  background: #fff;
+  background: var(--field-bg);
 }
 input[type="url"]:focus,
 input[type="text"]:focus,
@@ -311,8 +343,105 @@ textarea {
   color: var(--ink-soft);
   margin: 0 0 12px;
 }
-#resetList {
-  margin-top: 12px;
+
+/* ---------- Block-list rows ---------- */
+.block-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+/* Each site is a framed card; the inputs inside are borderless so the frame is
+   the only box, and the layout never shifts horizontally. */
+.block-row {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--field-bg);
+  padding: 3px 6px 3px 12px;
+  transition: border-color 0.12s ease;
+}
+.block-row:focus-within {
+  border-color: var(--red);
+}
+.row-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+}
+/* Borderless inputs that fill the framed row (selectors scoped to .block-row so
+   they outrank the generic input styling). */
+.block-row .row-domain,
+.block-row .row-ovr-url {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 6px 0;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--ink);
+}
+.block-row .row-domain:focus,
+.block-row .row-ovr-url:focus {
+  outline: none;
+}
+
+/* Per-site action selector. */
+.row-action {
+  flex: 0 0 auto;
+  width: auto;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--elev);
+  color: var(--ink);
+}
+
+/* Second line: the per-site destination, revealed when action is Redirect. */
+.row-redirect {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px dashed var(--line);
+  margin-top: 2px;
+  padding: 4px 0 6px;
+}
+.block-row.show-redirect .row-redirect {
+  display: flex;
+}
+.row-arrow {
+  flex: 0 0 auto;
+  color: var(--ink-soft);
+  font-size: 14px;
+  padding-left: 2px;
+}
+
+/* Trash button. */
+.row-del {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.row-del:hover {
+  background: var(--red-soft);
+  color: var(--red-dark);
+}
+.block-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
 }
 
 .foot {
@@ -323,11 +452,27 @@ textarea {
   position: sticky;
   bottom: 0;
   padding: 14px 0;
+  background: linear-gradient(to top, var(--bg) 70%, transparent);
 }
 .status {
   font-size: 13px;
   font-weight: 600;
   color: var(--red-dark);
+}
+.dirty {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-right: auto; /* push to the left, save stays right */
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.dirty-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--red);
 }
 
 /* ---------- Popup ---------- */

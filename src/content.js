@@ -98,10 +98,14 @@
 
     getConfig()
       .then(function (config) {
-        if (!config.enabled || config.mode !== "warning") return;
-        if (!hostMatchesBlocklist(window.location.hostname, config.blocklist)) {
-          return;
-        }
+        if (!config.enabled) return;
+        const matched = matchBlocklistDomain(
+          window.location.hostname,
+          config.blocklist
+        );
+        // Only the "warning" action draws a bar; redirect/stop are handled by
+        // declarativeNetRequest before this page meaningfully loads.
+        if (!matched || effectiveAction(matched, config) !== "warning") return;
         if (document.documentElement) {
           injectBanner(window.location.hostname, config);
         } else {

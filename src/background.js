@@ -1,87 +1,90 @@
 /*
- * Service worker. Implements the hybrid blocking engine:
+ * Service worker. Per-domain dynamic blocking engine.
  *
- *   - "error" mode   : the STATIC ruleset (rules/schibsted.json) blocks the
- *                      shipped defaults with the stop page. User-added domains
- *                      get DYNAMIC stop-page rules; defaults the user removed get
- *                      a DYNAMIC `allow` exemption that overrides the static rule.
- *   - "redirect" mode: the static ruleset is disabled; every blocked domain gets
- *                      a DYNAMIC redirect rule to the user's chosen URL.
- *   - "warning" mode : no rules at all; the content script shows the bar.
+ * Each blocked domain has an effective action — its per-site override, or the
+ * global default. Actions are applied independently, so the list can mix:
+ *
+ *   - "warning"  : no network rule; the content script shows the bar.
+ *   - "redirect" : a DNR rule redirects to the site's custom URL (or default).
+ *   - "error"    : a DNR rule redirects to the bundled stop page.
  *
  * Content scripts cover the defaults via static manifest matches; user-added
  * domains are registered dynamically (once their host permission is granted).
+ * Each content-script run self-gates on the per-domain action.
  */
 
 importScripts("blocklist.data.js", "common.js");
 
-const RULESET_ID = "schibsted";
 const USER_SCRIPT_ID = "ds-user-warning";
 
-function stopPagePath(domain) {
-  return "/src/blocked.html?domain=" + encodeURIComponent(domain);
-}
-
-async function syncStaticRuleset(errorMode) {
-  await DS_API.declarativeNetRequest.updateEnabledRulesets({
-    enableRulesetIds: errorMode ? [RULESET_ID] : [],
-    disableRulesetIds: errorMode ? [] : [RULESET_ID]
-  });
+// A full chrome-extension:// URL. Using `redirect.url` (not `redirect.extensionPath`)
+// because extensionPath rejects the "?domain=" query string we need.
+function stopPageUrl(domain) {
+  return (
+    DS_API.runtime.getURL("src/blocked.html") +
+    "?domain=" +
+    encodeURIComponent(domain)
+  );
 }
 
 async function syncDynamicRules(config) {
   const list = config.enabled ? config.blocklist : [];
-  const userDomains = userAddedDomains(list);
-  const removedDefaults = (
-    typeof DEFAULT_BLOCKLIST !== "undefined" ? DEFAULT_BLOCKLIST : []
-  ).filter(function (d) {
-    return list.indexOf(d) === -1;
-  });
-
   const dynamic = [];
   let id = 1;
 
-  if (config.enabled && config.mode === "redirect") {
-    // Everything redirects to the user's URL (no static ruleset in this mode).
-    for (const d of list) {
+  for (const d of list) {
+    const action = effectiveAction(d, config);
+    if (action === "redirect") {
+      // normalizeUrl guarantees a scheme — an unschemed URL would make the rule
+      // invalid and cause updateDynamicRules to reject the WHOLE batch.
+      const url = normalizeUrl(effectiveRedirectUrl(d, config));
+      if (!url) {
+        console.warn("[Drittsleipt] skipping redirect for", d, "— no URL");
+        continue;
+      }
       dynamic.push({
         id: id++,
         priority: 1,
-        action: { type: "redirect", redirect: { url: config.redirectUrl } },
+        action: { type: "redirect", redirect: { url: url } },
         condition: { requestDomains: [d], resourceTypes: ["main_frame"] }
       });
-    }
-  } else if (config.enabled && config.mode === "error") {
-    // Defaults are covered by the static ruleset. Add stop-page rules for the
-    // user's own domains, and allow-exemptions for defaults they removed.
-    for (const d of userDomains) {
+    } else if (action === "error") {
       dynamic.push({
         id: id++,
         priority: 1,
         action: {
           type: "redirect",
-          redirect: { extensionPath: stopPagePath(d) }
+          redirect: { url: stopPageUrl(d) }
         },
         condition: { requestDomains: [d], resourceTypes: ["main_frame"] }
       });
     }
-    for (const d of removedDefaults) {
-      dynamic.push({
-        id: id++,
-        priority: 2, // beats the static block rule
-        action: { type: "allow" },
-        condition: { requestDomains: [d], resourceTypes: ["main_frame"] }
-      });
-    }
+    // "warning": no network rule — handled by the content script.
   }
 
   const existing = await DS_API.declarativeNetRequest.getDynamicRules();
-  await DS_API.declarativeNetRequest.updateDynamicRules({
-    removeRuleIds: existing.map(function (r) {
-      return r.id;
-    }),
-    addRules: dynamic
-  });
+  try {
+    await DS_API.declarativeNetRequest.updateDynamicRules({
+      removeRuleIds: existing.map(function (r) {
+        return r.id;
+      }),
+      addRules: dynamic
+    });
+    console.debug(
+      "[Drittsleipt] applied",
+      dynamic.length,
+      "dynamic rule(s):",
+      dynamic.map(function (r) {
+        return r.condition.requestDomains[0] + " → " + (r.action.redirect.url || "stop page");
+      })
+    );
+  } catch (e) {
+    console.error(
+      "[Drittsleipt] updateDynamicRules failed — no rules applied:",
+      e,
+      dynamic
+    );
+  }
 }
 
 /** Register the warning-bar content script for user-added domains we can access. */
@@ -120,9 +123,7 @@ async function syncUserContentScripts(config) {
 
 async function applyState() {
   const config = await getConfig();
-  const errorMode = config.enabled && config.mode === "error";
 
-  await syncStaticRuleset(errorMode);
   await syncDynamicRules(config);
   await syncUserContentScripts(config);
 

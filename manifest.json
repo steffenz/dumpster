@@ -51,15 +51,6 @@
     "page": "src/options.html",
     "open_in_tab": true
   },
-  "declarative_net_request": {
-    "rule_resources": [
-      {
-        "id": "schibsted",
-        "enabled": false,
-        "path": "rules/schibsted.json"
-      }
-    ]
-  },
   "content_scripts": [
     {
       "matches": [

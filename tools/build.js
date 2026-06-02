@@ -2,8 +2,10 @@
 /*
  * Build step. Reads blocklist.json (the single source of truth) and regenerates:
  *   - manifest.json  -> scoped host_permissions + content-script matches
- *   - rules/schibsted.json -> static declarativeNetRequest ruleset (stop-page mode)
  *   - src/blocklist.data.js -> DEFAULT_BLOCKLIST baked in for the runtime
+ *
+ * Blocking rules are created dynamically at runtime (per-site actions), so there
+ * is no static ruleset to generate.
  *
  * Run after editing blocklist.json:  node tools/build.js
  */
@@ -40,23 +42,7 @@ write(
     ";\n"
 );
 
-// 2) Static ruleset: each default domain redirects to the bundled stop page.
-//    The domain is baked into the path so the page can name what it blocked.
-const rules = domains.map((d, i) => ({
-  id: i + 1,
-  priority: 1,
-  action: {
-    type: "redirect",
-    redirect: {
-      extensionPath: "/src/blocked.html?domain=" + encodeURIComponent(d)
-    }
-  },
-  condition: { requestDomains: [d], resourceTypes: ["main_frame"] }
-}));
-fs.mkdirSync(path.join(root, "rules"), { recursive: true });
-write("rules/schibsted.json", JSON.stringify(rules, null, 2) + "\n");
-
-// 3) Scoped permissions + content-script matches in the manifest.
+// 2) Scoped permissions + content-script matches in the manifest.
 const manifest = read("manifest.json");
 manifest.host_permissions = patterns;
 manifest.content_scripts[0].matches = patterns;
@@ -65,5 +51,5 @@ write("manifest.json", JSON.stringify(manifest, null, 2) + "\n");
 console.log(
   "Built " +
     domains.length +
-    " domains -> manifest.json, rules/schibsted.json, src/blocklist.data.js"
+    " domains -> manifest.json, src/blocklist.data.js"
 );

@@ -24,7 +24,8 @@
       </header>
 
       <section class="card">
-        <h2>When I visit a blocked site&hellip;</h2>
+        <h2>By default, when I visit a blocked site&hellip;</h2>
+        <p class="hint">This is the default for every site. You can override it per-site in the block list below.</p>
         <div class="modes">
           <label class="mode">
             <input type="radio" name="mode" value="warning" />
@@ -50,8 +51,9 @@
         </div>
 
         <div class="redirect-row" id="redirectRow" hidden>
-          <label for="redirectUrl">Redirect to</label>
+          <label for="redirectUrl">Default redirect destination</label>
           <input type="url" id="redirectUrl" placeholder="https://example.com" spellcheck="false" />
+          <p class="hint">Where redirects go by default. Set a site's action to <b>Redirect</b> in the block list below to give it its own destination.</p>
         </div>
       </section>
 
@@ -89,14 +91,20 @@
           <h2>Block list</h2>
           <span class="count" id="count"></span>
         </div>
-        <p class="hint">One domain per line. Subdomains are covered automatically &mdash; <code>vg.no</code> also blocks <code>www.vg.no</code>.</p>
-        <textarea id="blocklist" spellcheck="false" rows="14" placeholder="vg.no&#10;finn.no&#10;aftonbladet.se"></textarea>
-        <button type="button" class="btn btn-ghost btn-sm" id="resetList">Reset to Schibsted defaults</button>
+        <p class="hint">Subdomains are covered automatically &mdash; <code>vg.no</code> also blocks <code>www.vg.no</code>.</p>
+        <div class="block-rows" id="blockRows"></div>
+        <div class="block-actions">
+          <button type="button" class="btn btn-ghost btn-sm" id="addSite">+ Add site</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="resetList">Reset to Schibsted defaults</button>
+        </div>
       </section>
 
       <footer class="foot">
+        <span class="dirty" id="dirty" hidden>
+          <span class="dirty-dot" aria-hidden="true"></span>Unsaved changes
+        </span>
         <span class="status" id="status" role="status"></span>
-        <button type="button" class="btn btn-primary" id="save">Save changes</button>
+        <button type="button" class="btn btn-primary" id="save" disabled>Saved</button>
       </footer>
     </main>
 
