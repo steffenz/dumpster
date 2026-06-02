@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="512" height="512">
+  <!--
+    Drittsleipt icon — editable master. Concept A: a faceless poop swirl with a
+    red prohibition slash ("no crap"). Re-rasterize with: tools/render_icons.sh
+  -->
+  <defs>
+    <linearGradient id="badge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFF7F0"/>
+      <stop offset="1" stop-color="#F5E2D1"/>
+    </linearGradient>
+    <linearGradient id="poo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#A6713A"/>
+      <stop offset="1" stop-color="#5E3A1A"/>
+    </linearGradient>
+  </defs>
+
+  <!-- soft badge so the icon reads on light and dark toolbars -->
+  <rect x="6" y="6" width="116" height="116" rx="28" fill="url(#badge)"/>
+
+  <!-- tiered poop swirl: overlapping blobs share one fill and merge -->
+  <g fill="url(#poo)">
+    <ellipse cx="64" cy="94" rx="36" ry="20"/>
+    <circle cx="42" cy="88" r="17"/>
+    <circle cx="86" cy="88" r="17"/>
+    <ellipse cx="64" cy="72" rx="27" ry="16"/>
+    <circle cx="48" cy="68" r="13"/>
+    <circle cx="80" cy="68" r="13"/>
+    <ellipse cx="64" cy="54" rx="18" ry="13"/>
+    <circle cx="64" cy="44" r="9"/>
+    <circle cx="64" cy="36" r="5"/>
+  </g>
+
+  <!-- subtle top sheen -->
+  <ellipse cx="56" cy="50" rx="8" ry="5" fill="#C68A4E" opacity="0.55"/>
+
+  <!-- prohibition slash: cream casing creates a gap, red bar on top -->
+  <line x1="30" y1="32" x2="98" y2="100" stroke="url(#badge)" stroke-width="26" stroke-linecap="round"/>
+  <line x1="30" y1="32" x2="98" y2="100" stroke="#DC2626" stroke-width="15" stroke-linecap="round"/>
+</svg>

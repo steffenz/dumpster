@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Drittsleipt &middot; Settings</title>
+    <link rel="stylesheet" href="pages.css" />
+  </head>
+  <body class="options-page">
+    <main class="shell">
+      <header class="head">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">&#9416;</span>
+          <div>
+            <h1>Drittsleipt</h1>
+            <p class="tagline">Block the sites you want to quit. Decide what happens when you slip.</p>
+          </div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="enabled" />
+          <span class="switch-track"><span class="switch-thumb"></span></span>
+          <span class="switch-label" id="enabledLabel">Enabled</span>
+        </label>
+      </header>
+
+      <section class="card">
+        <h2>When I visit a blocked site&hellip;</h2>
+        <div class="modes">
+          <label class="mode">
+            <input type="radio" name="mode" value="warning" />
+            <span class="mode-body">
+              <span class="mode-title">Show a warning bar</span>
+              <span class="mode-desc">Let the page load, but stick a big red bar on top.</span>
+            </span>
+          </label>
+          <label class="mode">
+            <input type="radio" name="mode" value="redirect" />
+            <span class="mode-body">
+              <span class="mode-title">Redirect me elsewhere</span>
+              <span class="mode-desc">Send me to a calmer URL of my choosing instead.</span>
+            </span>
+          </label>
+          <label class="mode">
+            <input type="radio" name="mode" value="error" />
+            <span class="mode-body">
+              <span class="mode-title">Block with a stop page</span>
+              <span class="mode-desc">Replace the site with a plain "site blocked" page.</span>
+            </span>
+          </label>
+        </div>
+
+        <div class="redirect-row" id="redirectRow" hidden>
+          <label for="redirectUrl">Redirect to</label>
+          <input type="url" id="redirectUrl" placeholder="https://example.com" spellcheck="false" />
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Block list</h2>
+          <span class="count" id="count"></span>
+        </div>
+        <p class="hint">One domain per line. Subdomains are covered automatically &mdash; <code>vg.no</code> also blocks <code>www.vg.no</code>.</p>
+        <textarea id="blocklist" spellcheck="false" rows="14" placeholder="vg.no&#10;finn.no&#10;aftonbladet.se"></textarea>
+        <button type="button" class="btn btn-ghost btn-sm" id="resetList">Reset to Schibsted defaults</button>
+      </section>
+
+      <footer class="foot">
+        <span class="status" id="status" role="status"></span>
+        <button type="button" class="btn btn-primary" id="save">Save changes</button>
+      </footer>
+    </main>
+
+    <script src="blocklist.data.js"></script>
+    <script src="common.js"></script>
+    <script src="options.js"></script>
+  </body>
+</html>

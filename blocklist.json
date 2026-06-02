@@ -1,0 +1,27 @@
+{
+  "_comment": "Single source of truth for the default block list. Edit this, then run `node tools/build.js` to regenerate manifest host permissions, the static rule set, and src/blocklist.data.js.",
+  "domains": [
+    "vg.no",
+    "e24.no",
+    "aftenposten.no",
+    "bt.no",
+    "aftenbladet.no",
+    "fvn.no",
+    "podme.com",
+    "finn.no",
+    "lendo.no",
+    "prisjakt.no",
+    "aftonbladet.se",
+    "svd.se",
+    "omni.se",
+    "blocket.se",
+    "prisjakt.nu",
+    "lendo.se",
+    "tori.fi",
+    "oikotie.fi",
+    "dba.dk",
+    "bilbasen.dk",
+    "schibsted.com",
+    "schibsted.no"
+  ]
+}

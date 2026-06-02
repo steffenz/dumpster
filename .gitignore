@@ -1,0 +1,16 @@
+# The repo is meant to be downloaded and loaded as-is, so generated files
+# (icons/*.png, rules/schibsted.json, src/blocklist.data.js) ARE committed.
+# Only truly transient things are ignored:
+
+# Written by Chromium when loading/packing the unpacked extension
+_metadata/
+
+# Packaged builds
+*.zip
+*.crx
+*.pem
+
+# Tooling / OS cruft
+node_modules/
+.DS_Store
+*.log

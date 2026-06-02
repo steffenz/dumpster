@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Drittsleipt</title>
+    <link rel="stylesheet" href="pages.css" />
+  </head>
+  <body class="popup-page">
+    <div class="popup">
+      <header class="popup-head">
+        <span class="brand-mark" aria-hidden="true">&#9416;</span>
+        <strong>Drittsleipt</strong>
+        <label class="switch switch-sm">
+          <input type="checkbox" id="enabled" />
+          <span class="switch-track"><span class="switch-thumb"></span></span>
+        </label>
+      </header>
+
+      <div class="popup-row">
+        <label for="mode">When I visit a blocked site</label>
+        <select id="mode">
+          <option value="warning">Show a warning bar</option>
+          <option value="redirect">Redirect me elsewhere</option>
+          <option value="error">Block with a stop page</option>
+        </select>
+      </div>
+
+      <p class="popup-status" id="status"></p>
+
+      <button type="button" class="btn btn-ghost btn-block" id="options">
+        Manage block list &amp; settings
+      </button>
+    </div>
+
+    <script src="blocklist.data.js"></script>
+    <script src="common.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

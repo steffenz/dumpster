@@ -1,0 +1,113 @@
+{
+  "manifest_version": 3,
+  "name": "Drittsleipt",
+  "version": "0.1.0",
+  "description": "Block Schibsted sites and decide what happens when you visit them: warn, redirect, or block.",
+  "permissions": [
+    "declarativeNetRequest",
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "*://*.vg.no/*",
+    "*://*.e24.no/*",
+    "*://*.aftenposten.no/*",
+    "*://*.bt.no/*",
+    "*://*.aftenbladet.no/*",
+    "*://*.fvn.no/*",
+    "*://*.podme.com/*",
+    "*://*.finn.no/*",
+    "*://*.lendo.no/*",
+    "*://*.prisjakt.no/*",
+    "*://*.aftonbladet.se/*",
+    "*://*.svd.se/*",
+    "*://*.omni.se/*",
+    "*://*.blocket.se/*",
+    "*://*.prisjakt.nu/*",
+    "*://*.lendo.se/*",
+    "*://*.tori.fi/*",
+    "*://*.oikotie.fi/*",
+    "*://*.dba.dk/*",
+    "*://*.bilbasen.dk/*",
+    "*://*.schibsted.com/*",
+    "*://*.schibsted.no/*"
+  ],
+  "optional_host_permissions": [
+    "*://*/*"
+  ],
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "action": {
+    "default_title": "Drittsleipt",
+    "default_popup": "src/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "options_ui": {
+    "page": "src/options.html",
+    "open_in_tab": true
+  },
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "schibsted",
+        "enabled": false,
+        "path": "rules/schibsted.json"
+      }
+    ]
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.vg.no/*",
+        "*://*.e24.no/*",
+        "*://*.aftenposten.no/*",
+        "*://*.bt.no/*",
+        "*://*.aftenbladet.no/*",
+        "*://*.fvn.no/*",
+        "*://*.podme.com/*",
+        "*://*.finn.no/*",
+        "*://*.lendo.no/*",
+        "*://*.prisjakt.no/*",
+        "*://*.aftonbladet.se/*",
+        "*://*.svd.se/*",
+        "*://*.omni.se/*",
+        "*://*.blocket.se/*",
+        "*://*.prisjakt.nu/*",
+        "*://*.lendo.se/*",
+        "*://*.tori.fi/*",
+        "*://*.oikotie.fi/*",
+        "*://*.dba.dk/*",
+        "*://*.bilbasen.dk/*",
+        "*://*.schibsted.com/*",
+        "*://*.schibsted.no/*"
+      ],
+      "js": [
+        "src/blocklist.data.js",
+        "src/common.js",
+        "src/content.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": false
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "src/blocked.html"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

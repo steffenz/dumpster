@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Blocked &middot; Drittsleipt</title>
+    <link rel="stylesheet" href="pages.css" />
+  </head>
+  <body class="blocked-page">
+    <main class="card blocked-card">
+      <div class="blocked-mark" aria-hidden="true">&#9416;</div>
+      <h1>Site blocked</h1>
+      <p class="blocked-sub">
+        You decided to stop using this one.
+        <span id="domain" class="domain"></span> is on your block list.
+      </p>
+      <div class="blocked-actions">
+        <button id="back" class="btn btn-primary">Take me back</button>
+        <button id="options" class="btn btn-ghost">Manage block list</button>
+      </div>
+    </main>
+    <script src="blocklist.data.js"></script>
+    <script src="common.js"></script>
+    <script src="blocked.js"></script>
+  </body>
+</html>

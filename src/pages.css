@@ -1,0 +1,372 @@
+/* Shared styles for the options page, popup, and block page. */
+
+:root {
+  --red: #dc2626;
+  --red-dark: #b91c1c;
+  --red-soft: #fef2f2;
+  --ink: #1f2430;
+  --ink-soft: #5b6473;
+  --line: #e6e8ec;
+  --bg: #f6f7f9;
+  --card: #ffffff;
+  --radius: 12px;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2 {
+  margin: 0;
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+  font: inherit;
+  font-weight: 600;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.btn-sm {
+  padding: 7px 12px;
+  font-size: 13px;
+}
+.btn-block {
+  width: 100%;
+}
+.btn-primary {
+  background: var(--red);
+  color: #fff;
+}
+.btn-primary:hover {
+  background: var(--red-dark);
+}
+.btn-ghost {
+  background: #fff;
+  color: var(--ink);
+  border-color: var(--line);
+}
+.btn-ghost:hover {
+  background: #f1f2f4;
+}
+
+.domain,
+code {
+  font-family: var(--mono);
+  background: var(--red-soft);
+  color: var(--red-dark);
+  padding: 1px 6px;
+  border-radius: 5px;
+  font-size: 0.92em;
+}
+
+/* ---------- Brand marks ---------- */
+.brand-mark,
+.blocked-mark {
+  color: var(--red);
+}
+
+/* ---------- Switch ---------- */
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+.switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.switch-track {
+  position: relative;
+  width: 44px;
+  height: 26px;
+  background: #cbd0d8;
+  border-radius: 999px;
+  transition: background 0.15s ease;
+  flex: 0 0 auto;
+}
+.switch-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s ease;
+}
+.switch input:checked + .switch-track {
+  background: var(--red);
+}
+.switch input:checked + .switch-track .switch-thumb {
+  transform: translateX(18px);
+}
+.switch-sm .switch-track {
+  width: 38px;
+  height: 22px;
+}
+.switch-sm .switch-thumb {
+  width: 16px;
+  height: 16px;
+}
+.switch-sm input:checked + .switch-track .switch-thumb {
+  transform: translateX(16px);
+}
+.switch-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+/* ---------- Options page ---------- */
+.shell {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.brand {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+.brand-mark {
+  font-size: 34px;
+  line-height: 1;
+}
+.head h1 {
+  font-size: 22px;
+}
+.tagline {
+  margin: 4px 0 0;
+  color: var(--ink-soft);
+  font-size: 13px;
+  max-width: 42ch;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 18px;
+}
+.card h2 {
+  font-size: 15px;
+  margin-bottom: 14px;
+}
+.card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.card-head h2 {
+  margin-bottom: 0;
+}
+.count {
+  font-size: 12px;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.modes {
+  display: grid;
+  gap: 10px;
+}
+.mode {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+.mode:hover {
+  border-color: #cdd2da;
+}
+.mode input {
+  margin-top: 2px;
+  accent-color: var(--red);
+}
+.mode input:checked ~ .mode-body .mode-title {
+  color: var(--red-dark);
+}
+.mode:has(input:checked) {
+  border-color: var(--red);
+  background: var(--red-soft);
+}
+.mode-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.mode-title {
+  font-weight: 600;
+  font-size: 14px;
+}
+.mode-desc {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+
+.redirect-row {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.redirect-row label {
+  font-size: 13px;
+  font-weight: 600;
+}
+input[type="url"],
+textarea,
+select {
+  font: inherit;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  width: 100%;
+  background: #fff;
+}
+input[type="url"]:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid var(--red);
+  outline-offset: 1px;
+  border-color: var(--red);
+}
+textarea {
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.6;
+  resize: vertical;
+}
+.hint {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  margin: 0 0 12px;
+}
+#resetList {
+  margin-top: 12px;
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  position: sticky;
+  bottom: 0;
+  padding: 14px 0;
+}
+.status {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--red-dark);
+}
+
+/* ---------- Popup ---------- */
+.popup-page {
+  background: var(--card);
+}
+.popup {
+  width: 288px;
+  padding: 16px;
+}
+.popup-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.popup-head .brand-mark {
+  font-size: 22px;
+}
+.popup-head strong {
+  flex: 1 1 auto;
+  font-size: 15px;
+}
+.popup-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.popup-row label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.popup-status {
+  min-height: 16px;
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--red-dark);
+}
+
+/* ---------- Block page ---------- */
+.blocked-page {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.blocked-card {
+  text-align: center;
+  max-width: 440px;
+  width: 100%;
+  padding: 40px 32px;
+}
+.blocked-mark {
+  font-size: 56px;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+.blocked-card h1 {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+.blocked-sub {
+  color: var(--ink-soft);
+  font-size: 15px;
+  line-height: 1.5;
+  margin: 0 0 24px;
+}
+.blocked-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
