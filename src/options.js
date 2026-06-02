@@ -8,6 +8,19 @@
     ),
     redirectRow: document.getElementById("redirectRow"),
     redirectUrl: document.getElementById("redirectUrl"),
+    wordingCard: document.getElementById("wordingCard"),
+    bannerTextRow: document.getElementById("bannerTextRow"),
+    bannerText: document.getElementById("bannerText"),
+    blockedTitleRow: document.getElementById("blockedTitleRow"),
+    blockedTitle: document.getElementById("blockedTitle"),
+    blockedTextRow: document.getElementById("blockedTextRow"),
+    blockedText: document.getElementById("blockedText"),
+    backLabelRow: document.getElementById("backLabelRow"),
+    backLabel: document.getElementById("backLabel"),
+    hideLabelRow: document.getElementById("hideLabelRow"),
+    hideLabel: document.getElementById("hideLabel"),
+    manageLabelRow: document.getElementById("manageLabelRow"),
+    manageLabel: document.getElementById("manageLabel"),
     blocklist: document.getElementById("blocklist"),
     count: document.getElementById("count"),
     resetList: document.getElementById("resetList"),
@@ -25,7 +38,18 @@
   }
 
   function syncDependentUI() {
-    els.redirectRow.hidden = selectedMode() !== "redirect";
+    const mode = selectedMode();
+    els.redirectRow.hidden = mode !== "redirect";
+
+    // Show only the wording that applies to the current mode.
+    els.bannerTextRow.hidden = mode !== "warning";
+    els.blockedTitleRow.hidden = mode !== "error";
+    els.blockedTextRow.hidden = mode !== "error";
+    els.backLabelRow.hidden = mode === "redirect"; // both warning + stop page
+    els.hideLabelRow.hidden = mode !== "warning";
+    els.manageLabelRow.hidden = mode !== "error";
+    els.wordingCard.hidden = mode === "redirect";
+
     els.enabledLabel.textContent = els.enabled.checked ? "Enabled" : "Disabled";
     const n = parseBlocklist(els.blocklist.value).length;
     els.count.textContent = n + (n === 1 ? " site" : " sites");
@@ -46,6 +70,12 @@
         m.checked = m.value === config.mode;
       });
       els.redirectUrl.value = config.redirectUrl || "";
+      els.bannerText.value = config.bannerText;
+      els.blockedTitle.value = config.blockedTitle;
+      els.blockedText.value = config.blockedText;
+      els.backLabel.value = config.backLabel;
+      els.hideLabel.value = config.hideLabel;
+      els.manageLabel.value = config.manageLabel;
       els.blocklist.value = config.blocklist.join("\n");
       syncDependentUI();
     });
@@ -78,6 +108,13 @@
           enabled: els.enabled.checked,
           mode: mode,
           redirectUrl: redirectUrl || DEFAULT_CONFIG.redirectUrl,
+          bannerText: els.bannerText.value.trim() || DEFAULT_CONFIG.bannerText,
+          blockedTitle:
+            els.blockedTitle.value.trim() || DEFAULT_CONFIG.blockedTitle,
+          blockedText: els.blockedText.value.trim() || DEFAULT_CONFIG.blockedText,
+          backLabel: els.backLabel.value.trim() || DEFAULT_CONFIG.backLabel,
+          hideLabel: els.hideLabel.value.trim() || DEFAULT_CONFIG.hideLabel,
+          manageLabel: els.manageLabel.value.trim() || DEFAULT_CONFIG.manageLabel,
           blocklist: blocklist
         }).then(function () {
           els.blocklist.value = blocklist.join("\n");

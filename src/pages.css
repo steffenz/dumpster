@@ -79,6 +79,23 @@ code {
 .brand-mark,
 .blocked-mark {
   color: var(--red);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.brand-mark img {
+  width: 36px;
+  height: 36px;
+  display: block;
+}
+.popup-head .brand-mark img {
+  width: 24px;
+  height: 24px;
+}
+.blocked-mark img {
+  width: 76px;
+  height: 76px;
+  display: block;
 }
 
 /* ---------- Switch ---------- */
@@ -244,11 +261,21 @@ code {
   flex-direction: column;
   gap: 6px;
 }
-.redirect-row label {
+.redirect-row label,
+.field label {
   font-size: 13px;
   font-weight: 600;
 }
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.field + .field {
+  margin-top: 14px;
+}
 input[type="url"],
+input[type="text"],
 textarea,
 select {
   font: inherit;
@@ -260,6 +287,7 @@ select {
   background: #fff;
 }
 input[type="url"]:focus,
+input[type="text"]:focus,
 textarea:focus,
 select:focus {
   outline: 2px solid var(--red);
@@ -271,6 +299,12 @@ textarea {
   font-size: 13px;
   line-height: 1.6;
   resize: vertical;
+}
+/* Wording fields are prose, not domains — use the normal UI font. */
+.field textarea {
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.5;
 }
 .hint {
   font-size: 12.5px;

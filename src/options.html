@@ -10,7 +10,7 @@
     <main class="shell">
       <header class="head">
         <div class="brand">
-          <span class="brand-mark" aria-hidden="true">&#9416;</span>
+          <span class="brand-mark" aria-hidden="true"><img src="../assets/icon.svg" alt="" /></span>
           <div>
             <h1>Drittsleipt</h1>
             <p class="tagline">Block the sites you want to quit. Decide what happens when you slip.</p>
@@ -52,6 +52,35 @@
         <div class="redirect-row" id="redirectRow" hidden>
           <label for="redirectUrl">Redirect to</label>
           <input type="url" id="redirectUrl" placeholder="https://example.com" spellcheck="false" />
+        </div>
+      </section>
+
+      <section class="card" id="wordingCard">
+        <h2>What it says</h2>
+        <p class="hint">Write your own wording. Use <code>{site}</code> wherever you want the blocked domain to appear.</p>
+        <div class="field" id="bannerTextRow">
+          <label for="bannerText">Warning bar message</label>
+          <textarea id="bannerText" rows="2"></textarea>
+        </div>
+        <div class="field" id="blockedTitleRow">
+          <label for="blockedTitle">Stop page heading</label>
+          <input type="text" id="blockedTitle" />
+        </div>
+        <div class="field" id="blockedTextRow">
+          <label for="blockedText">Stop page text</label>
+          <textarea id="blockedText" rows="2"></textarea>
+        </div>
+        <div class="field" id="backLabelRow">
+          <label for="backLabel">"Back" button label</label>
+          <input type="text" id="backLabel" />
+        </div>
+        <div class="field" id="hideLabelRow">
+          <label for="hideLabel">"Hide" button label</label>
+          <input type="text" id="hideLabel" />
+        </div>
+        <div class="field" id="manageLabelRow">
+          <label for="manageLabel">"Manage block list" button label</label>
+          <input type="text" id="manageLabel" />
         </div>
       </section>
 

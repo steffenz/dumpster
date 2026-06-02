@@ -8,6 +8,9 @@ when you visit one:
 - **Redirect** — you're sent to a calmer URL of your choosing.
 - **Stop page** — the site is replaced with a plain "site blocked" page.
 
+The wording on the warning bar and stop page is fully editable in the admin
+panel — use `{site}` anywhere you want the blocked domain to appear.
+
 Ships with a starter list of Schibsted properties (VG, Aftenposten, Finn,
 Aftonbladet, SvD, Blocket, Tori, DBA, and more). The list is fully editable.
 
@@ -117,6 +120,8 @@ That's the planned next step rather than something wired up today.
 ## Notes
 
 - Icons are rendered from `assets/icon.svg` — edit the SVG and rerun
-  `./tools/render_icons.sh` to regenerate the PNGs.
+  `./tools/render_icons.sh` to regenerate the PNGs. The icon is transparent and
+  reused everywhere: the toolbar, the warning bar, the stop page, and the admin
+  panel header.
 - Disabling the extension from the popup removes all blocking rules and hides the
   warning bar.

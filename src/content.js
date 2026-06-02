@@ -26,8 +26,10 @@
     }
   }
 
-  function injectBanner(hostname) {
+  function injectBanner(hostname, config) {
     if (document.getElementById(BANNER_ID)) return;
+
+    const iconUrl = DS_API.runtime.getURL("assets/icon.svg");
 
     const host = document.createElement("div");
     host.id = BANNER_ID;
@@ -48,7 +50,7 @@
       "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;" +
       "background:#dc2626;color:#fff;padding:12px 16px;" +
       "box-shadow:0 2px 10px rgba(0,0,0,.35);font-size:14px;line-height:1.4;}" +
-      ".icon{font-size:20px;flex:0 0 auto;}" +
+      ".icon{width:24px;height:24px;flex:0 0 auto;display:block;}" +
       ".msg{flex:1 1 auto;}" +
       ".msg b{font-weight:700;}" +
       ".host{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;" +
@@ -62,16 +64,17 @@
       ".hide:hover{background:rgba(255,255,255,.3);}" +
       "</style>" +
       '<div class="bar" role="alert">' +
-      '<span class="icon" aria-hidden="true">&#9888;</span>' +
-      '<span class="msg">You chose to stop using this site. ' +
-      '<b><span class="host"></span></b> is on your Drittsleipt block list.</span>' +
+      '<img class="icon" alt="" src="' + iconUrl + '">' +
+      '<span class="msg"></span>' +
       '<span class="actions">' +
-      '<button class="back">Take me back</button>' +
-      '<button class="hide">Hide for now</button>' +
+      '<button class="back"></button>' +
+      '<button class="hide"></button>' +
       "</span>" +
       "</div>";
 
-    root.querySelector(".host").textContent = hostname;
+    fillTemplate(root.querySelector(".msg"), config.bannerText, hostname, "host");
+    root.querySelector(".back").textContent = config.backLabel;
+    root.querySelector(".hide").textContent = config.hideLabel;
 
     root.querySelector(".back").addEventListener("click", function () {
       if (window.history.length > 1) {
@@ -100,10 +103,10 @@
           return;
         }
         if (document.documentElement) {
-          injectBanner(window.location.hostname);
+          injectBanner(window.location.hostname, config);
         } else {
           document.addEventListener("DOMContentLoaded", function () {
-            injectBanner(window.location.hostname);
+            injectBanner(window.location.hostname, config);
           });
         }
       })

@@ -19,8 +19,35 @@ const DEFAULT_CONFIG = {
   mode: "warning",
   redirectUrl: "https://www.google.com",
   blocklist:
-    typeof DEFAULT_BLOCKLIST !== "undefined" ? DEFAULT_BLOCKLIST.slice() : []
+    typeof DEFAULT_BLOCKLIST !== "undefined" ? DEFAULT_BLOCKLIST.slice() : [],
+  // User-editable wording. "{site}" is replaced with the blocked domain.
+  bannerText: "You chose to stop using {site}. It's on your block list.",
+  blockedTitle: "Site blocked",
+  blockedText: "You decided to stop using {site}. It's on your block list.",
+  // Button labels.
+  backLabel: "Take me back",
+  hideLabel: "Hide for now",
+  manageLabel: "Manage block list"
 };
+
+/**
+ * Safely render a template like "Stop using {site}." into `targetEl`, replacing
+ * each "{site}" with a styled <span> containing the domain. Uses DOM nodes (not
+ * innerHTML) so user-entered wording can never inject markup.
+ */
+function fillTemplate(targetEl, template, site, siteClassName) {
+  targetEl.textContent = "";
+  const parts = String(template == null ? "" : template).split("{site}");
+  for (let i = 0; i < parts.length; i++) {
+    if (parts[i]) targetEl.appendChild(document.createTextNode(parts[i]));
+    if (i < parts.length - 1) {
+      const span = document.createElement("span");
+      if (siteClassName) span.className = siteClassName;
+      span.textContent = site;
+      targetEl.appendChild(span);
+    }
+  }
+}
 
 /** Match pattern that covers a domain and all of its subdomains. */
 function originPattern(domain) {
@@ -94,7 +121,13 @@ function getConfig() {
       redirectUrl: cfg.redirectUrl || DEFAULT_CONFIG.redirectUrl,
       blocklist: Array.isArray(cfg.blocklist)
         ? cfg.blocklist
-        : DEFAULT_CONFIG.blocklist.slice()
+        : DEFAULT_CONFIG.blocklist.slice(),
+      bannerText: cfg.bannerText || DEFAULT_CONFIG.bannerText,
+      blockedTitle: cfg.blockedTitle || DEFAULT_CONFIG.blockedTitle,
+      blockedText: cfg.blockedText || DEFAULT_CONFIG.blockedText,
+      backLabel: cfg.backLabel || DEFAULT_CONFIG.backLabel,
+      hideLabel: cfg.hideLabel || DEFAULT_CONFIG.hideLabel,
+      manageLabel: cfg.manageLabel || DEFAULT_CONFIG.manageLabel
     };
   });
 }
