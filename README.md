@@ -1,25 +1,26 @@
-# Drittsleipt
+# Dumpster
 
-A browser extension to help you **stop using Schibsted sites and services**. It
-blocks a list of domains and lets you decide, in an admin panel, what happens
-when you visit one:
+A browser extension to help you **stop using the sites you keep slipping back
+to**. Group sites into **bins** (collections), and for each bin decide what
+happens when you visit one:
 
 - **Warning bar** — the page loads, but a big red bar is stuck on top.
 - **Redirect** — you're sent to a calmer URL of your choosing.
 - **Stop page** — the site is replaced with a plain "site blocked" page.
 
-You pick a **default action**, then **override it per-site**: each entry in the
-block list has its own action dropdown, so you can keep a stop page as the
-default while sending `vg.no` to `nrk.no` and showing only a warning on
-`finn.no`. Redirect sites can use the default destination or their own.
+Each bin has its own **default action**, and individual sites can **override**
+it. So one bin ("Schibsted") can replace everything with a stop page while
+sending `vg.no` to `nrk.no`, and another bin ("Social") just shows a warning —
+all at once. Bins can be toggled on and off independently.
 
-The wording **and button labels** on the warning bar and stop page are fully
-editable in the admin panel — use `{site}` anywhere you want the blocked domain
-to appear. The panel follows your system **light/dark** theme automatically and
-flags unsaved changes (nothing applies until you hit **Save**).
+Dumpster ships **empty** — you create bins and **paste in your own lists** of
+domains. A ready-to-paste Schibsted starter list lives in
+[`presets/schibsted.txt`](presets/schibsted.txt) (VG, Aftenposten, Finn,
+Aftonbladet, SvD, Blocket, Tori, DBA, and more).
 
-Ships with a starter list of Schibsted properties (VG, Aftenposten, Finn,
-Aftonbladet, SvD, Blocket, Tori, DBA, and more). The list is fully editable.
+The wording **and button labels** on the warning bar and stop page are editable
+under the **Appearance** tab — use `{site}` anywhere you want the blocked domain
+to appear. The panel follows your system **light/dark** theme automatically.
 
 ## Install (Chrome / Brave / Edge / Vivaldi)
 
@@ -29,7 +30,7 @@ load the folder.
 
 1. **Download the ZIP.** On the GitHub page click the green **Code** button →
    **Download ZIP**. (Or grab a release ZIP if one is attached.)
-2. **Unzip it** somewhere permanent — e.g. `~/Extensions/drittsleipt`. The
+2. **Unzip it** somewhere permanent — e.g. `~/Extensions/dumpster`. The
    browser reads the extension from this folder every time it starts, so don't
    delete it or load it from inside the Downloads folder.
 3. Open your browser's extensions page:
@@ -41,8 +42,8 @@ load the folder.
 5. Click **Load unpacked** and select the unzipped folder — the one that
    contains `manifest.json` (if you opened the ZIP and there's a single folder
    inside, pick *that* inner folder).
-6. Pin the toolbar icon. Click it for the quick on/off + mode switch, or
-   right-click → **Options** to manage the block list.
+6. Pin the toolbar icon. Click it for the master on/off and per-bin toggles, or
+   right-click → **Options** to manage bins and wording.
 
 > **Why "Developer mode"?** This extension is loaded directly rather than from
 > the Chrome Web Store, so the browser calls it an unpacked/developer extension.
@@ -53,60 +54,58 @@ load the folder.
 > **Updating:** download the new ZIP, replace the folder's contents, then click
 > the **↻ reload** icon on the card at `chrome://extensions`.
 
-## Editing the block list
+## Bins & importing
 
-**As a user:** you don't need any of this. Add or remove sites right in the
-admin panel (popup → Options). When you add your own domain, the extension asks
-for permission for just that one host the first time you save — that's all.
+Everything happens in the admin panel (popup → **Manage bins & settings**):
 
-**As a maintainer** changing the *default* shipped list: `blocklist.json` is the
-single source of truth. After editing it, regenerate the committed artifacts:
+1. **New bin** → give it a name and a default action (warning / redirect / stop).
+2. **Paste domains** → paste a newline- or comma-separated list; each becomes a
+   site in the bin. Or **+ Add site** one at a time.
+3. Optionally set a per-site override (a different action, or a custom redirect)
+   from the dropdown on each row.
+4. **Save changes** on that bin.
 
-```sh
-node tools/build.js
-```
+To block the Schibsted ecosystem, open [`presets/schibsted.txt`](presets/schibsted.txt),
+copy it, make a bin, and paste it in.
 
-This rewrites the manifest's scoped `host_permissions` and content-script
-`matches`, and `src/blocklist.data.js`. **Commit the regenerated files** — they
-ship in the repo so end users can load the download without running anything.
-Then reload the extension.
+When you save, the extension asks for host permission for the bin's domains (one
+prompt). There are **no baked-in defaults**, so nothing is requested until you
+add it.
 
 ## Permissions — why no `<all_urls>`
 
-The extension only touches the sites on the list, so permissions are scoped to
-exactly those domains (e.g. `*://*.vg.no/*`) instead of all sites. The store
-warning reads "Read and change your data on vg.no and N other sites." User-added
-domains use `optional_host_permissions`, requested per-host on demand — no broad
-install-time grant.
+Dumpster declares **zero** host permissions up front. Every domain you add is
+requested individually through `optional_host_permissions` when you save the
+bin, so the browser only ever grants access to the exact sites on your lists —
+never "all sites." Blocking rules are created at runtime with
+`declarativeNetRequest`.
 
 ## How it works
 
 | File | Role |
 | --- | --- |
-| `blocklist.json` | Source of truth for the default domains. |
-| `tools/build.js` | Generates manifest perms and `blocklist.data.js`. |
-| `manifest.json` | Manifest V3 definition (generated perms; do not hand-edit the host lists). |
-| `src/blocklist.data.js` | Generated `DEFAULT_BLOCKLIST`, loaded everywhere. |
-| `src/common.js` | Shared storage, domain-matching, action-resolution, and permission helpers. |
-| `src/background.js` | Service worker. Maintains per-domain dynamic `declarativeNetRequest` rules. |
+| `manifest.json` | Manifest V3 definition. No host permissions; everything is optional. |
+| `src/common.js` | Data model (bins), storage, action-resolution, and permission helpers. |
+| `src/background.js` | Service worker. Resolves bins → per-domain dynamic `declarativeNetRequest` rules + registers warning content scripts. |
 | `src/content.js` | Injects the warning bar (for "warning" sites only), in a shadow root. |
-| `src/options.html/js` | The admin panel. |
-| `src/popup.html/js` | Toolbar quick-toggle (on/off + default action). |
+| `src/options.html/js` | The admin panel: bin grid, popup bin editor, Appearance tab. |
+| `src/popup.html/js` | Toolbar quick-toggles (master on/off + per-bin). |
 | `src/blocked.html/js` | The custom stop page. |
 | `src/pages.css` | Shared styling for the pages above. |
-| `assets/icon.svg` | Editable icon master (poop swirl + prohibition slash). |
+| `presets/schibsted.txt` | Copy-paste starter list of Schibsted domains. |
+| `assets/icon.svg` | Editable icon master (the flaming dumpster). |
 | `tools/render_icons.sh` | Rasterizes the SVG to `icons/icon{16,48,128}.png` (`./tools/render_icons.sh`). |
 
-The blocking engine resolves an **effective action per domain** — the site's
-override, or the global default — and applies each independently:
+Each active site resolves to an **effective action** — its own override, or its
+bin's default — and they apply independently:
 
 - **redirect** / **stop page** sites get a dynamic `declarativeNetRequest`
-  redirect rule (to the custom/default URL, or the bundled stop page).
-- **warning** sites get no network rule; the content script draws the bar and
-  self-gates on the per-domain action.
+  redirect rule (to the custom/bin URL, or the bundled stop page).
+- **warning** sites get no network rule; a dynamically-registered content script
+  draws the bar and self-gates on the per-domain action.
 
-This means the list can mix all three actions at once. Rules are built
-dynamically because each site can differ; there is no static ruleset.
+So the lists can mix all three actions at once. Rules are built dynamically
+because each site can differ; there is no static ruleset and no build step.
 
 Redirect/stop-page actions intercept the request *before* the page loads (via
 declarativeNetRequest), so there's no flicker. Matching is suffix-based: `vg.no`
@@ -130,5 +129,6 @@ That's the planned next step rather than something wired up today.
   `./tools/render_icons.sh` to regenerate the PNGs. The icon is transparent and
   reused everywhere: the toolbar, the warning bar, the stop page, and the admin
   panel header.
-- Disabling the extension from the popup removes all blocking rules and hides the
-  warning bar.
+- The master toggle (header or popup) and per-bin toggles apply **instantly**.
+  Bin content edits and Appearance changes apply when you hit their **Save**.
+- Disabling the extension removes all blocking rules and hides the warning bar.

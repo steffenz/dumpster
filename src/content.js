@@ -6,9 +6,9 @@
  */
 
 (function () {
-  const BANNER_ID = "drittsleipt-banner-host";
+  const BANNER_ID = "dumpster-banner-host";
   // Per-tab dismissal so "Hide" sticks until the next navigation/reload.
-  const SESSION_KEY = "__drittsleipt_dismissed__";
+  const SESSION_KEY = "__dumpster_dismissed__";
 
   function alreadyDismissed() {
     try {
@@ -99,13 +99,10 @@
     getConfig()
       .then(function (config) {
         if (!config.enabled) return;
-        const matched = matchBlocklistDomain(
-          window.location.hostname,
-          config.blocklist
-        );
         // Only the "warning" action draws a bar; redirect/stop are handled by
         // declarativeNetRequest before this page meaningfully loads.
-        if (!matched || effectiveAction(matched, config) !== "warning") return;
+        const res = resolveForHost(window.location.hostname, config);
+        if (!res || res.action !== "warning") return;
         if (document.documentElement) {
           injectBanner(window.location.hostname, config);
         } else {

@@ -3,112 +3,129 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Drittsleipt &middot; Settings</title>
+    <title>Dumpster &middot; Settings</title>
     <link rel="stylesheet" href="pages.css" />
   </head>
   <body class="options-page">
-    <main class="shell">
+    <main class="shell wide">
       <header class="head">
         <div class="brand">
           <span class="brand-mark" aria-hidden="true"><img src="../assets/icon.svg" alt="" /></span>
-          <div>
-            <h1>Drittsleipt</h1>
-            <p class="tagline">Block the sites you want to quit. Decide what happens when you slip.</p>
+          <div class="brand-text">
+            <h1>Dumpster</h1>
+            <p class="tagline">Toss the sites you want to quit into bins. Decide what happens when you slip.</p>
           </div>
         </div>
-        <label class="switch">
+        <label class="switch master" title="Turn all blocking on or off">
+          <span class="master-dot" aria-hidden="true"></span>
+          <span class="switch-label" id="enabledLabel">Enabled</span>
           <input type="checkbox" id="enabled" />
           <span class="switch-track"><span class="switch-thumb"></span></span>
-          <span class="switch-label" id="enabledLabel">Enabled</span>
         </label>
       </header>
 
-      <section class="card">
-        <h2>By default, when I visit a blocked site&hellip;</h2>
-        <p class="hint">This is the default for every site. You can override it per-site in the block list below.</p>
-        <div class="modes">
-          <label class="mode">
-            <input type="radio" name="mode" value="warning" />
-            <span class="mode-body">
-              <span class="mode-title">Show a warning bar</span>
-              <span class="mode-desc">Let the page load, but stick a big red bar on top.</span>
-            </span>
-          </label>
-          <label class="mode">
-            <input type="radio" name="mode" value="redirect" />
-            <span class="mode-body">
-              <span class="mode-title">Redirect me elsewhere</span>
-              <span class="mode-desc">Send me to a calmer URL of my choosing instead.</span>
-            </span>
-          </label>
-          <label class="mode">
-            <input type="radio" name="mode" value="error" />
-            <span class="mode-body">
-              <span class="mode-title">Block with a stop page</span>
-              <span class="mode-desc">Replace the site with a plain "site blocked" page.</span>
-            </span>
-          </label>
-        </div>
+      <nav class="tabs" role="tablist">
+        <button type="button" class="tab is-active" data-tab="bins" role="tab">Bins</button>
+        <button type="button" class="tab" data-tab="appearance" role="tab">Appearance</button>
+      </nav>
 
-        <div class="redirect-row" id="redirectRow" hidden>
-          <label for="redirectUrl">Default redirect destination</label>
-          <input type="url" id="redirectUrl" placeholder="https://example.com" spellcheck="false" />
-          <p class="hint">Where redirects go by default. Set a site's action to <b>Redirect</b> in the block list below to give it its own destination.</p>
-        </div>
+      <!-- Bins tab -->
+      <section class="tabpane" data-pane="bins">
+        <div class="bin-grid" id="bins"></div>
+        <p class="empty-bins" id="emptyBins" hidden>
+          No bins yet. Create one and paste in a list of sites to block.
+        </p>
+        <button type="button" class="btn btn-ghost btn-newbin" id="newBin">+ New bin</button>
       </section>
 
-      <section class="card" id="wordingCard">
-        <h2>What it says</h2>
-        <p class="hint">Write your own wording. Use <code>{site}</code> wherever you want the blocked domain to appear.</p>
-        <div class="field" id="bannerTextRow">
-          <label for="bannerText">Warning bar message</label>
-          <textarea id="bannerText" rows="2"></textarea>
-        </div>
-        <div class="field" id="blockedTitleRow">
-          <label for="blockedTitle">Stop page heading</label>
-          <input type="text" id="blockedTitle" />
-        </div>
-        <div class="field" id="blockedTextRow">
-          <label for="blockedText">Stop page text</label>
-          <textarea id="blockedText" rows="2"></textarea>
-        </div>
-        <div class="field" id="backLabelRow">
-          <label for="backLabel">"Back" button label</label>
-          <input type="text" id="backLabel" />
-        </div>
-        <div class="field" id="hideLabelRow">
-          <label for="hideLabel">"Hide" button label</label>
-          <input type="text" id="hideLabel" />
-        </div>
-        <div class="field" id="manageLabelRow">
-          <label for="manageLabel">"Manage block list" button label</label>
-          <input type="text" id="manageLabel" />
-        </div>
-      </section>
-
-      <section class="card">
-        <div class="card-head">
-          <h2>Block list</h2>
-          <span class="count" id="count"></span>
-        </div>
-        <p class="hint">Subdomains are covered automatically &mdash; <code>vg.no</code> also blocks <code>www.vg.no</code>.</p>
-        <div class="block-rows" id="blockRows"></div>
-        <div class="block-actions">
-          <button type="button" class="btn btn-ghost btn-sm" id="addSite">+ Add site</button>
-          <button type="button" class="btn btn-ghost btn-sm" id="resetList">Reset to Schibsted defaults</button>
+      <!-- Appearance tab -->
+      <section class="tabpane" data-pane="appearance" hidden>
+        <section class="card">
+          <h2>What it says</h2>
+          <p class="hint">Wording is shared across every bin. Use <code>{site}</code> wherever you want the blocked domain to appear.</p>
+          <div class="field">
+            <label for="bannerText">Warning bar message</label>
+            <textarea id="bannerText" rows="2"></textarea>
+          </div>
+          <div class="field">
+            <label for="blockedTitle">Stop page heading</label>
+            <input type="text" id="blockedTitle" />
+          </div>
+          <div class="field">
+            <label for="blockedText">Stop page text</label>
+            <textarea id="blockedText" rows="2"></textarea>
+          </div>
+          <div class="field">
+            <label for="backLabel">"Back" button label</label>
+            <input type="text" id="backLabel" />
+          </div>
+          <div class="field">
+            <label for="hideLabel">"Hide" button label</label>
+            <input type="text" id="hideLabel" />
+          </div>
+          <div class="field">
+            <label for="manageLabel">"Manage" button label</label>
+            <input type="text" id="manageLabel" />
+          </div>
+        </section>
+        <div class="pane-foot">
+          <button type="button" class="btn btn-ghost btn-sm" id="appReset">Reset to defaults</button>
+          <span class="dirty" id="appDirty" hidden><span class="dirty-dot"></span>Unsaved changes</span>
+          <span class="status" id="appStatus" role="status"></span>
+          <button type="button" class="btn btn-primary" id="appSave" disabled>Saved</button>
         </div>
       </section>
-
-      <footer class="foot">
-        <span class="dirty" id="dirty" hidden>
-          <span class="dirty-dot" aria-hidden="true"></span>Unsaved changes
-        </span>
-        <span class="status" id="status" role="status"></span>
-        <button type="button" class="btn btn-primary" id="save" disabled>Saved</button>
-      </footer>
     </main>
 
-    <script src="blocklist.data.js"></script>
+    <!-- Bin editor (popup) -->
+    <div class="modal-backdrop" id="binModal" hidden>
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalName">
+        <header class="modal-head">
+          <input type="text" class="bin-name" id="modalName" aria-label="Bin name" placeholder="Bin name" />
+          <button type="button" class="modal-close" id="modalClose" aria-label="Close">&times;</button>
+        </header>
+
+        <div class="modal-body">
+          <div class="bin-action">
+            <label class="bin-action-label" for="modalMode">When I visit a site in this bin&hellip;</label>
+            <select class="bin-mode" id="modalMode">
+              <option value="warning">Show a warning bar</option>
+              <option value="redirect">Redirect me elsewhere</option>
+              <option value="error">Block with a stop page</option>
+            </select>
+            <div class="field bin-redirect" id="modalRedirectRow">
+              <label for="modalRedirect">Default redirect destination</label>
+              <input type="url" id="modalRedirect" placeholder="https://example.com" spellcheck="false" />
+            </div>
+          </div>
+
+          <div class="bin-rows" id="modalRows"></div>
+
+          <div class="bin-actions">
+            <button type="button" class="btn btn-ghost btn-sm" id="modalAddSite">+ Add site</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="modalPaste">Paste domains</button>
+            <span class="count" id="modalCount"></span>
+          </div>
+
+          <div class="bin-paste-box" id="modalPasteBox" hidden>
+            <textarea id="modalPasteText" rows="5" spellcheck="false" placeholder="vg.no&#10;finn.no&#10;aftonbladet.se"></textarea>
+            <div class="paste-actions">
+              <button type="button" class="btn btn-primary btn-sm" id="modalPasteAdd">Add to bin</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="modalPasteCancel">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <footer class="modal-foot">
+          <button type="button" class="btn btn-ghost btn-danger" id="modalDelete">Delete bin</button>
+          <span class="modal-foot-spacer"></span>
+          <span class="dirty" id="modalDirty" hidden><span class="dirty-dot"></span>Unsaved</span>
+          <button type="button" class="btn btn-ghost" id="modalCancel">Cancel</button>
+          <button type="button" class="btn btn-primary" id="modalSave" disabled>Save changes</button>
+        </footer>
+      </div>
+    </div>
+
     <script src="common.js"></script>
     <script src="options.js"></script>
   </body>

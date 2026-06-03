@@ -47,6 +47,12 @@
   box-sizing: border-box;
 }
 
+/* The `hidden` attribute must win over author `display` rules (e.g. the modal's
+   `display: flex`), otherwise hidden elements stay visible. */
+[hidden] {
+  display: none !important;
+}
+
 body {
   margin: 0;
   font-family: var(--font);
@@ -193,30 +199,82 @@ code {
   margin: 0 auto;
   padding: 32px 24px 64px;
 }
+.shell.wide {
+  max-width: 1040px;
+}
 .head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 24px;
 }
 .brand {
   display: flex;
-  gap: 14px;
+  gap: 16px;
   align-items: center;
+  min-width: 0;
 }
 .brand-mark {
   font-size: 34px;
   line-height: 1;
 }
+/* Header brand mark sits in a soft tinted tile so the icon reads as a logo. */
+.head .brand-mark {
+  width: 54px;
+  height: 54px;
+  flex: 0 0 auto;
+  border-radius: 15px;
+  background: rgba(76, 175, 80, 0.14);
+}
+.head .brand-mark img {
+  width: 40px;
+  height: 40px;
+}
 .head h1 {
-  font-size: 22px;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+/* Master enable — a labeled pill with a status dot. */
+.master {
+  flex: 0 0 auto;
+  gap: 10px;
+  padding: 7px 9px 7px 15px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+}
+.master .switch-label {
+  font-weight: 700;
+  color: var(--ink-soft);
+  order: 2;
+}
+.master:has(input:checked) .switch-label {
+  color: var(--ink);
+}
+.master-dot {
+  order: 1;
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--switch-off);
+  transition: background 0.15s ease;
+}
+.master:has(input:checked) .master-dot {
+  background: var(--red);
+}
+.master .switch-track {
+  order: 3;
 }
 .tagline {
-  margin: 4px 0 0;
+  margin: 5px 0 0;
   color: var(--ink-soft);
-  font-size: 13px;
-  max-width: 42ch;
+  font-size: 14.5px;
+  line-height: 1.45;
+  max-width: 60ch;
 }
 
 .card {
@@ -444,6 +502,69 @@ textarea {
   margin-top: 14px;
 }
 
+/* ---------- Bins (several of these are reused by the modal editor) ---------- */
+.bin-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+.bin-action {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.bin-action-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.bin-mode {
+  width: auto;
+  flex: 0 0 auto;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.bin-redirect {
+  flex: 1 1 100%;
+  margin-top: 4px;
+}
+.bin-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.bin-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+.bin-count {
+  margin-left: auto;
+}
+.bin-paste-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+.bin-paste-box textarea {
+  font-family: var(--mono);
+  font-size: 13px;
+}
+.paste-actions {
+  display: flex;
+  gap: 8px;
+}
+.btn-newbin {
+  width: 100%;
+  margin-bottom: 18px;
+}
+
 .foot {
   display: flex;
   align-items: center;
@@ -514,6 +635,43 @@ textarea {
   font-weight: 600;
   color: var(--red-dark);
 }
+.popup-bins {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.popup-bin {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  cursor: pointer;
+}
+.popup-bin-meta {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.popup-bin-name {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.popup-bin-sub {
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+.popup-empty {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
 
 /* ---------- Block page ---------- */
 .blocked-page {
@@ -548,4 +706,198 @@ textarea {
   display: flex;
   gap: 10px;
   justify-content: center;
+}
+
+/* ---------- Tabs ---------- */
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 20px;
+}
+.tab {
+  font: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ink-soft);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 10px 14px;
+  margin-bottom: -1px;
+  cursor: pointer;
+}
+.tab:hover {
+  color: var(--ink);
+}
+.tab.is-active {
+  color: var(--red-dark);
+  border-bottom-color: var(--red);
+}
+
+/* ---------- Bin grid ---------- */
+.bin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.bin-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--red);
+  border-radius: var(--radius);
+  padding: 16px;
+  transition: border-color 0.12s ease, opacity 0.12s ease;
+}
+.bin-card.is-off {
+  opacity: 0.55;
+  border-left-color: var(--line-2);
+}
+.bin-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.bin-card-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bin-card-name:hover {
+  color: var(--red-dark);
+}
+.bin-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.badge {
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+.badge-warning {
+  background: #fff4e0;
+  color: #9a5b00;
+}
+.badge-redirect {
+  background: #e6efff;
+  color: #1d4ed8;
+}
+.badge-error {
+  background: var(--red-soft);
+  color: var(--red-dark);
+}
+.bin-card-count {
+  font-size: 12px;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+.bin-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+}
+.bin-card-actions .bin-edit {
+  flex: 1 1 auto;
+}
+.empty-bins {
+  color: var(--ink-soft);
+  font-size: 14px;
+  margin: 0 0 16px;
+}
+
+/* ---------- Pane footer / appearance save ---------- */
+.pane-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  padding: 4px 0 8px;
+}
+.pane-foot #appReset {
+  margin-right: auto;
+}
+
+/* ---------- Modal (bin editor) ---------- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 18, 22, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 1000;
+}
+.modal {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  width: 100%;
+  max-width: 620px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
+}
+.modal-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--line);
+}
+.modal-close {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  color: var(--ink-soft);
+  font-size: 24px;
+  line-height: 1;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.modal-close:hover {
+  background: var(--elev-hover);
+  color: var(--ink);
+}
+.modal-body {
+  padding: 18px;
+  overflow-y: auto;
+}
+.modal-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--line);
+}
+.modal-foot-spacer {
+  flex: 1 1 auto;
+}
+.btn-danger {
+  color: var(--red-dark);
+}
+.btn-danger:hover {
+  background: var(--red-soft);
 }

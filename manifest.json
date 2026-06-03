@@ -1,37 +1,14 @@
 {
   "manifest_version": 3,
-  "name": "Drittsleipt",
+  "name": "Dumpster",
   "version": "0.1.0",
-  "description": "Block Schibsted sites and decide what happens when you visit them: warn, redirect, or block.",
+  "description": "Block the sites you're trying to quit, grouped into bins — warn, redirect, or replace them. Ships empty; paste in your own lists.",
   "permissions": [
     "declarativeNetRequest",
     "storage",
     "scripting"
   ],
-  "host_permissions": [
-    "*://*.vg.no/*",
-    "*://*.e24.no/*",
-    "*://*.aftenposten.no/*",
-    "*://*.bt.no/*",
-    "*://*.aftenbladet.no/*",
-    "*://*.fvn.no/*",
-    "*://*.podme.com/*",
-    "*://*.finn.no/*",
-    "*://*.lendo.no/*",
-    "*://*.prisjakt.no/*",
-    "*://*.aftonbladet.se/*",
-    "*://*.svd.se/*",
-    "*://*.omni.se/*",
-    "*://*.blocket.se/*",
-    "*://*.prisjakt.nu/*",
-    "*://*.lendo.se/*",
-    "*://*.tori.fi/*",
-    "*://*.oikotie.fi/*",
-    "*://*.dba.dk/*",
-    "*://*.bilbasen.dk/*",
-    "*://*.schibsted.com/*",
-    "*://*.schibsted.no/*"
-  ],
+  "host_permissions": [],
   "optional_host_permissions": [
     "*://*/*"
   ],
@@ -39,7 +16,7 @@
     "service_worker": "src/background.js"
   },
   "action": {
-    "default_title": "Drittsleipt",
+    "default_title": "Dumpster",
     "default_popup": "src/popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
@@ -51,41 +28,6 @@
     "page": "src/options.html",
     "open_in_tab": true
   },
-  "content_scripts": [
-    {
-      "matches": [
-        "*://*.vg.no/*",
-        "*://*.e24.no/*",
-        "*://*.aftenposten.no/*",
-        "*://*.bt.no/*",
-        "*://*.aftenbladet.no/*",
-        "*://*.fvn.no/*",
-        "*://*.podme.com/*",
-        "*://*.finn.no/*",
-        "*://*.lendo.no/*",
-        "*://*.prisjakt.no/*",
-        "*://*.aftonbladet.se/*",
-        "*://*.svd.se/*",
-        "*://*.omni.se/*",
-        "*://*.blocket.se/*",
-        "*://*.prisjakt.nu/*",
-        "*://*.lendo.se/*",
-        "*://*.tori.fi/*",
-        "*://*.oikotie.fi/*",
-        "*://*.dba.dk/*",
-        "*://*.bilbasen.dk/*",
-        "*://*.schibsted.com/*",
-        "*://*.schibsted.no/*"
-      ],
-      "js": [
-        "src/blocklist.data.js",
-        "src/common.js",
-        "src/content.js"
-      ],
-      "run_at": "document_start",
-      "all_frames": false
-    }
-  ],
   "web_accessible_resources": [
     {
       "resources": [

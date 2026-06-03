@@ -1,65 +1,83 @@
-/* Admin panel logic. Loads config into the form and saves edits back. */
+/* Admin panel: bins in a grid, a popup editor per bin, and an Appearance tab. */
 (function () {
-  const els = {
-    enabled: document.getElementById("enabled"),
-    enabledLabel: document.getElementById("enabledLabel"),
-    modes: Array.prototype.slice.call(
-      document.querySelectorAll('input[name="mode"]')
-    ),
-    redirectRow: document.getElementById("redirectRow"),
-    redirectUrl: document.getElementById("redirectUrl"),
-    wordingCard: document.getElementById("wordingCard"),
-    bannerTextRow: document.getElementById("bannerTextRow"),
-    bannerText: document.getElementById("bannerText"),
-    blockedTitleRow: document.getElementById("blockedTitleRow"),
-    blockedTitle: document.getElementById("blockedTitle"),
-    blockedTextRow: document.getElementById("blockedTextRow"),
-    blockedText: document.getElementById("blockedText"),
-    backLabelRow: document.getElementById("backLabelRow"),
-    backLabel: document.getElementById("backLabel"),
-    hideLabelRow: document.getElementById("hideLabelRow"),
-    hideLabel: document.getElementById("hideLabel"),
-    manageLabelRow: document.getElementById("manageLabelRow"),
-    manageLabel: document.getElementById("manageLabel"),
-    blockRows: document.getElementById("blockRows"),
-    addSite: document.getElementById("addSite"),
-    count: document.getElementById("count"),
-    resetList: document.getElementById("resetList"),
-    save: document.getElementById("save"),
-    status: document.getElementById("status"),
-    dirty: document.getElementById("dirty")
-  };
-
   const MODE_LABELS = {
     warning: "Warning bar",
     redirect: "Redirect",
     error: "Stop page"
   };
-
-  let statusTimer = null;
-  let savedSnapshot = null;
-  let isDirty = false;
-
-  function selectedMode() {
-    const checked = els.modes.find(function (m) {
-      return m.checked;
-    });
-    return checked ? checked.value : "warning";
-  }
-
-  /* ---------- Block-list rows ---------- */
-
   const TRASH_SVG =
     '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<path d="M3 6h18"/>' +
-    '<path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>' +
+    '<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>' +
     '<path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>' +
-    '<line x1="10" y1="11" x2="10" y2="17"/>' +
-    '<line x1="14" y1="11" x2="14" y2="17"/>' +
-    "</svg>";
+    '<line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>';
 
-  function buildRow(domain, override) {
-    override = override || {};
+  const $ = function (id) {
+    return document.getElementById(id);
+  };
+
+  let current = null; // last-saved config, kept in sync with storage
+  let editingId = null; // bin id open in the modal (null = new bin)
+  let editingEnabled = true; // preserve the bin's enabled flag across an edit
+  let modalSnapshot = "";
+  let appSnapshot = "";
+  let statusTimer = null;
+
+  /* ---------- persistence ---------- */
+
+  function persist(patch) {
+    return setConfig(patch).then(function (cfg) {
+      current = cfg;
+      return cfg;
+    });
+  }
+
+  /* ---------- grid ---------- */
+
+  function renderGrid() {
+    const wrap = $("bins");
+    wrap.textContent = "";
+    $("emptyBins").hidden = current.bins.length > 0;
+
+    current.bins.forEach(function (bin) {
+      const card = document.createElement("article");
+      card.className = "bin-card" + (bin.enabled === false ? " is-off" : "");
+      card.dataset.id = bin.id;
+
+      const n = bin.sites.length;
+      card.innerHTML =
+        '<div class="bin-card-top">' +
+        '<button type="button" class="bin-card-name bin-edit">' +
+        "</button>" +
+        '<label class="switch switch-sm bin-toggle"><input type="checkbox"><span class="switch-track"><span class="switch-thumb"></span></span></label>' +
+        "</div>" +
+        '<div class="bin-card-meta">' +
+        '<span class="badge badge-' +
+        bin.mode +
+        '">' +
+        MODE_LABELS[bin.mode] +
+        "</span>" +
+        '<span class="bin-card-count">' +
+        n +
+        (n === 1 ? " site" : " sites") +
+        "</span>" +
+        "</div>" +
+        '<div class="bin-card-actions">' +
+        '<button type="button" class="btn btn-ghost btn-sm bin-edit">Edit</button>' +
+        '<button type="button" class="row-del bin-card-del" title="Delete bin" aria-label="Delete bin">' +
+        TRASH_SVG +
+        "</button>" +
+        "</div>";
+
+      card.querySelector(".bin-card-name").textContent = bin.name;
+      card.querySelector(".bin-toggle input").checked = bin.enabled !== false;
+      wrap.appendChild(card);
+    });
+  }
+
+  /* ---------- rows (inside modal) ---------- */
+
+  function buildRow(site) {
+    site = site || {};
     const row = document.createElement("div");
     row.className = "block-row";
     row.innerHTML =
@@ -77,273 +95,411 @@
       "</div>" +
       '<div class="row-redirect">' +
       '<span class="row-arrow" aria-hidden="true">&rarr;</span>' +
-      '<input type="url" class="row-ovr-url" placeholder="Uses the default redirect if left blank" spellcheck="false">' +
+      '<input type="url" class="row-ovr-url" placeholder="Uses the bin\'s redirect if left blank" spellcheck="false">' +
       "</div>";
-    row.querySelector(".row-domain").value = domain || "";
-    row.querySelector(".row-action").value = override.action || "default";
-    if (override.redirectUrl) {
-      row.querySelector(".row-ovr-url").value = override.redirectUrl;
-    }
+    row.querySelector(".row-domain").value = site.domain || "";
+    row.querySelector(".row-action").value = site.action || "default";
+    if (site.redirectUrl) row.querySelector(".row-ovr-url").value = site.redirectUrl;
     return row;
   }
 
-  function renderRows(domains, overrides) {
-    els.blockRows.textContent = "";
-    overrides = overrides || {};
-    domains.forEach(function (d) {
-      els.blockRows.appendChild(buildRow(d, overrides[d]));
-    });
+  function readRow(row) {
+    const domain = normalizeDomain(row.querySelector(".row-domain").value);
+    if (!domain) return null;
+    const action = row.querySelector(".row-action").value;
+    const site = { domain: domain, action: action };
+    if (action === "redirect") {
+      const url = normalizeUrl(row.querySelector(".row-ovr-url").value);
+      if (url) site.redirectUrl = url;
+    }
+    return site;
   }
 
-  /** Show each row's redirect line only when its action is "redirect". */
-  function updateRowStates() {
-    els.blockRows.querySelectorAll(".block-row").forEach(function (row) {
-      const action = row.querySelector(".row-action").value;
-      row.classList.toggle("show-redirect", action === "redirect");
-    });
-  }
-
-  /** Collect rows into { domains, siteOverrides }. */
-  function readRows() {
-    const domains = [];
-    const siteOverrides = {};
+  function readModalSites() {
     const seen = new Set();
-    els.blockRows.querySelectorAll(".block-row").forEach(function (row) {
-      const d = normalizeDomain(row.querySelector(".row-domain").value);
-      if (!d || seen.has(d)) return;
-      seen.add(d);
-      domains.push(d);
-      const action = row.querySelector(".row-action").value;
-      if (action !== "default") {
-        const o = { action: action };
-        if (action === "redirect") {
-          const url = normalizeUrl(row.querySelector(".row-ovr-url").value);
-          if (url) o.redirectUrl = url;
+    const out = [];
+    $("modalRows")
+      .querySelectorAll(".block-row")
+      .forEach(function (row) {
+        const s = readRow(row);
+        if (s && !seen.has(s.domain)) {
+          seen.add(s.domain);
+          out.push(s);
         }
-        siteOverrides[d] = o;
-      }
-    });
-    return { domains: domains, siteOverrides: siteOverrides };
-  }
-
-  /** The set of actions in play: the default, plus every per-site override. */
-  function usedActions() {
-    const set = new Set([selectedMode()]);
-    els.blockRows.querySelectorAll(".row-action").forEach(function (s) {
-      if (s.value !== "default") set.add(s.value);
-    });
-    return set;
-  }
-
-  /* ---------- Mode-dependent visibility ---------- */
-
-  function syncDependentUI() {
-    const mode = selectedMode();
-    const used = usedActions();
-
-    // The default redirect URL matters whenever anything redirects.
-    els.redirectRow.hidden = !used.has("redirect");
-
-    // Show only the wording for actions actually in use (default or overridden).
-    const warn = used.has("warning");
-    const stop = used.has("error");
-    els.bannerTextRow.hidden = !warn;
-    els.blockedTitleRow.hidden = !stop;
-    els.blockedTextRow.hidden = !stop;
-    els.backLabelRow.hidden = !(warn || stop);
-    els.hideLabelRow.hidden = !warn;
-    els.manageLabelRow.hidden = !stop;
-    els.wordingCard.hidden = !(warn || stop);
-
-    // Reflect the current default in every row's "Default" option.
-    const label = "Default (" + MODE_LABELS[mode] + ")";
-    els.blockRows
-      .querySelectorAll('.row-action option[value="default"]')
-      .forEach(function (opt) {
-        opt.textContent = label;
       });
-
-    els.enabledLabel.textContent = els.enabled.checked ? "Enabled" : "Disabled";
-    const n = readRows().domains.length;
-    els.count.textContent = n + (n === 1 ? " site" : " sites");
+    return out;
   }
 
-  /* ---------- Unsaved-changes tracking ---------- */
+  function readModalBin() {
+    return {
+      id: editingId || makeId(),
+      name: $("modalName").value.trim() || "Untitled bin",
+      enabled: editingEnabled,
+      mode: $("modalMode").value,
+      redirectUrl: normalizeUrl($("modalRedirect").value),
+      sites: readModalSites()
+    };
+  }
 
-  function formSnapshot() {
-    const rows = readRows();
-    return JSON.stringify({
-      enabled: els.enabled.checked,
-      mode: selectedMode(),
-      redirectUrl: els.redirectUrl.value.trim(),
-      bannerText: els.bannerText.value.trim(),
-      blockedTitle: els.blockedTitle.value.trim(),
-      blockedText: els.blockedText.value.trim(),
-      backLabel: els.backLabel.value.trim(),
-      hideLabel: els.hideLabel.value.trim(),
-      manageLabel: els.manageLabel.value.trim(),
-      domains: rows.domains,
-      siteOverrides: rows.siteOverrides
+  /* ---------- modal UI sync ---------- */
+
+  function syncModalUI() {
+    const mode = $("modalMode").value;
+    $("modalRedirectRow").hidden = mode !== "redirect";
+    const label = "Default (" + MODE_LABELS[mode] + ")";
+    const rowsEl = $("modalRows");
+    rowsEl.querySelectorAll('.row-action option[value="default"]').forEach(
+      function (opt) {
+        opt.textContent = label;
+      }
+    );
+    rowsEl.querySelectorAll(".block-row").forEach(function (row) {
+      row.classList.toggle(
+        "show-redirect",
+        row.querySelector(".row-action").value === "redirect"
+      );
+    });
+    const n = rowsEl.querySelectorAll(".block-row").length;
+    $("modalCount").textContent = n + (n === 1 ? " site" : " sites");
+  }
+
+  function modalSnapshotNow() {
+    return JSON.stringify(readModalBin());
+  }
+
+  function refreshModalDirty() {
+    const dirty = editingId === null || modalSnapshotNow() !== modalSnapshot;
+    $("modalDirty").hidden = !dirty;
+    $("modalSave").disabled = !dirty;
+  }
+
+  function onModalChange() {
+    syncModalUI();
+    refreshModalDirty();
+  }
+
+  /* ---------- modal open/close ---------- */
+
+  function openModal(bin) {
+    editingId = bin ? bin.id : null;
+    editingEnabled = bin ? bin.enabled !== false : true;
+    bin = bin || newBin("Bin " + (current.bins.length + 1));
+
+    $("modalName").value = bin.name || "";
+    $("modalMode").value = bin.mode || "warning";
+    $("modalRedirect").value = bin.redirectUrl || "";
+    const rowsEl = $("modalRows");
+    rowsEl.textContent = "";
+    (bin.sites || []).forEach(function (s) {
+      rowsEl.appendChild(buildRow(s));
+    });
+    $("modalPasteBox").hidden = true;
+    $("modalPasteText").value = "";
+
+    syncModalUI();
+    modalSnapshot = modalSnapshotNow();
+    refreshModalDirty();
+
+    $("binModal").hidden = false;
+    $("modalName").focus();
+  }
+
+  function modalIsDirty() {
+    return editingId === null || modalSnapshotNow() !== modalSnapshot;
+  }
+
+  function closeModal(force) {
+    if (!force && modalIsDirty()) {
+      if (!window.confirm("Discard unsaved changes to this bin?")) return;
+    }
+    $("binModal").hidden = true;
+    editingId = null;
+  }
+
+  function saveModal() {
+    const bin = readModalBin();
+    const usesRedirect =
+      bin.mode === "redirect" ||
+      bin.sites.some(function (s) {
+        return s.action === "redirect";
+      });
+    if (usesRedirect && !bin.redirectUrl) {
+      flashModal("Add a default redirect URL first.");
+      $("modalRedirect").focus();
+      return;
+    }
+
+    // Request host permission for this bin's domains (gesture from the click).
+    requestDomainPermissions(bin.sites.map(function (s) {
+      return s.domain;
+    }))
+      .then(function () {
+        const bins = current.bins.slice();
+        const idx = bins.findIndex(function (b) {
+          return b.id === bin.id;
+        });
+        if (idx >= 0) bins[idx] = bin;
+        else bins.push(bin);
+        return persist({ bins: bins });
+      })
+      .then(function () {
+        // Snapshot matches saved state so closeModal() won't prompt, then close.
+        editingId = bin.id;
+        modalSnapshot = modalSnapshotNow();
+        renderGrid();
+        closeModal(true);
+      })
+      .catch(function () {
+        flashModal("Couldn't save — permission request failed.");
+      });
+  }
+
+  function deleteModalBin() {
+    const name = $("modalName").value.trim() || "this bin";
+    if (editingId === null) {
+      closeModal(true);
+      return;
+    }
+    if (!window.confirm("Delete the bin “" + name + "” and all its sites?")) return;
+    const bins = current.bins.filter(function (b) {
+      return b.id !== editingId;
+    });
+    persist({ bins: bins }).then(function () {
+      renderGrid();
+      closeModal(true);
     });
   }
 
-  function setDirty(dirty) {
-    isDirty = dirty;
-    els.dirty.hidden = !dirty;
-    els.save.disabled = !dirty;
-    els.save.textContent = dirty ? "Save changes" : "Saved";
+  let modalStatusTimer = null;
+  function flashModal(text) {
+    const el = $("modalDirty");
+    el.hidden = false;
+    el.querySelector(".dirty-dot").style.display = "none";
+    el.lastChild.textContent = text;
+    if (modalStatusTimer) clearTimeout(modalStatusTimer);
+    modalStatusTimer = setTimeout(function () {
+      el.querySelector(".dirty-dot").style.display = "";
+      el.lastChild.textContent = "Unsaved";
+      refreshModalDirty();
+    }, 1600);
   }
 
-  function refreshDirty() {
-    setDirty(formSnapshot() !== savedSnapshot);
+  /* ---------- appearance tab ---------- */
+
+  const APP_FIELDS = [
+    "bannerText",
+    "blockedTitle",
+    "blockedText",
+    "backLabel",
+    "hideLabel",
+    "manageLabel"
+  ];
+
+  function fillAppearance(config) {
+    APP_FIELDS.forEach(function (k) {
+      $(k).value = config[k];
+    });
   }
 
-  function markClean() {
-    savedSnapshot = formSnapshot();
-    setDirty(false);
+  function appSnapshotNow() {
+    return JSON.stringify(
+      APP_FIELDS.map(function (k) {
+        return $(k).value.trim();
+      })
+    );
   }
 
-  function showStatus(text) {
-    els.status.textContent = text;
+  function refreshAppDirty() {
+    const dirty = appSnapshotNow() !== appSnapshot;
+    $("appDirty").hidden = !dirty;
+    $("appSave").disabled = !dirty;
+    $("appSave").textContent = dirty ? "Save changes" : "Saved";
+  }
+
+  function saveAppearance() {
+    const patch = {};
+    APP_FIELDS.forEach(function (k) {
+      patch[k] = $(k).value.trim() || DEFAULT_CONFIG[k];
+    });
+    persist(patch).then(function () {
+      fillAppearance(current);
+      appSnapshot = appSnapshotNow();
+      refreshAppDirty();
+      flashStatus("appStatus", "Saved ✓");
+    });
+  }
+
+  function flashStatus(id, text) {
+    const el = $(id);
+    el.textContent = text;
     if (statusTimer) clearTimeout(statusTimer);
     statusTimer = setTimeout(function () {
-      els.status.textContent = "";
+      el.textContent = "";
     }, 2500);
   }
 
-  /* ---------- Load / save ---------- */
+  /* ---------- tabs ---------- */
 
-  function load() {
-    getConfig().then(function (config) {
-      els.enabled.checked = !!config.enabled;
-      els.modes.forEach(function (m) {
-        m.checked = m.value === config.mode;
-      });
-      els.redirectUrl.value = config.redirectUrl || "";
-      els.bannerText.value = config.bannerText;
-      els.blockedTitle.value = config.blockedTitle;
-      els.blockedText.value = config.blockedText;
-      els.backLabel.value = config.backLabel;
-      els.hideLabel.value = config.hideLabel;
-      els.manageLabel.value = config.manageLabel;
-      renderRows(config.blocklist, config.siteOverrides);
-      updateRowStates();
-      syncDependentUI();
-      markClean();
+  function selectTab(name) {
+    document.querySelectorAll(".tab").forEach(function (t) {
+      t.classList.toggle("is-active", t.dataset.tab === name);
+    });
+    document.querySelectorAll(".tabpane").forEach(function (p) {
+      p.hidden = p.dataset.pane !== name;
     });
   }
 
-  function save() {
-    const mode = selectedMode();
-    const rows = readRows();
-    const used = usedActions();
-    let redirectUrl = els.redirectUrl.value.trim();
+  /* ---------- wiring ---------- */
 
-    if (used.has("redirect")) {
-      if (!redirectUrl) {
-        showStatus("Add a default redirect URL first.");
-        els.redirectUrl.focus();
-        return;
-      }
-      redirectUrl = normalizeUrl(redirectUrl);
-    }
+  function load() {
+    getConfig().then(function (config) {
+      current = config;
+      $("enabled").checked = !!config.enabled;
+      $("enabledLabel").textContent = config.enabled ? "Enabled" : "Disabled";
+      fillAppearance(config);
+      appSnapshot = appSnapshotNow();
+      refreshAppDirty();
+      renderGrid();
+    });
+  }
 
-    // Request host permission for any user-added (non-default) domains. This
-    // MUST run synchronously off the click — no awaits before it — so the
-    // browser still sees the user gesture. Already-granted origins don't
-    // re-prompt, so it's safe to request the whole set.
-    const userDomains = userAddedDomains(rows.domains);
-    requestDomainPermissions(userDomains)
-      .then(function (granted) {
-        return setConfig({
-          enabled: els.enabled.checked,
-          mode: mode,
-          redirectUrl: redirectUrl || DEFAULT_CONFIG.redirectUrl,
-          siteOverrides: rows.siteOverrides,
-          bannerText: els.bannerText.value.trim() || DEFAULT_CONFIG.bannerText,
-          blockedTitle:
-            els.blockedTitle.value.trim() || DEFAULT_CONFIG.blockedTitle,
-          blockedText: els.blockedText.value.trim() || DEFAULT_CONFIG.blockedText,
-          backLabel: els.backLabel.value.trim() || DEFAULT_CONFIG.backLabel,
-          hideLabel: els.hideLabel.value.trim() || DEFAULT_CONFIG.hideLabel,
-          manageLabel: els.manageLabel.value.trim() || DEFAULT_CONFIG.manageLabel,
-          blocklist: rows.domains
-        }).then(function () {
-          // Re-render from the cleaned data (dedupes, lowercases, drops blanks).
-          els.redirectUrl.value = redirectUrl;
-          renderRows(rows.domains, rows.siteOverrides);
-          updateRowStates();
-          syncDependentUI();
-          markClean();
-          if (userDomains.length && !granted) {
-            showStatus("Saved — but allow the permission to block your own sites.");
-          } else {
-            showStatus("Saved ✓");
-          }
+  // Master enable — applies instantly.
+  $("enabled").addEventListener("change", function () {
+    $("enabledLabel").textContent = $("enabled").checked
+      ? "Enabled"
+      : "Disabled";
+    persist({ enabled: $("enabled").checked });
+  });
+
+  // Tabs.
+  document.querySelector(".tabs").addEventListener("click", function (e) {
+    const tab = e.target.closest(".tab");
+    if (tab) selectTab(tab.dataset.tab);
+  });
+
+  // Grid interactions.
+  $("bins").addEventListener("click", function (e) {
+    const card = e.target.closest(".bin-card");
+    if (!card) return;
+    const bin = current.bins.find(function (b) {
+      return b.id === card.dataset.id;
+    });
+    if (!bin) return;
+
+    if (e.target.closest(".bin-card-del")) {
+      if (window.confirm("Delete the bin “" + bin.name + "” and all its sites?")) {
+        const bins = current.bins.filter(function (b) {
+          return b.id !== bin.id;
         });
-      })
-      .catch(function () {
-        showStatus("Couldn't save — permission request failed.");
-      });
-  }
+        persist({ bins: bins }).then(renderGrid);
+      }
+      return;
+    }
+    if (e.target.closest(".bin-edit")) {
+      openModal(bin);
+    }
+  });
 
-  /* ---------- Events ---------- */
+  // Bin enable toggle — applies instantly.
+  $("bins").addEventListener("change", function (e) {
+    if (!e.target.closest(".bin-toggle")) return;
+    const card = e.target.closest(".bin-card");
+    const on = e.target.checked;
+    const bins = current.bins.map(function (b) {
+      return b.id === card.dataset.id ? Object.assign({}, b, { enabled: on }) : b;
+    });
+    card.classList.toggle("is-off", !on);
+    persist({ bins: bins });
+  });
 
-  function onAnyChange() {
-    updateRowStates();
-    syncDependentUI();
-    refreshDirty();
-  }
+  $("newBin").addEventListener("click", function () {
+    openModal(null);
+  });
 
-  const shell = document.querySelector(".shell");
-  shell.addEventListener("input", onAnyChange);
-  shell.addEventListener("change", function (e) {
-    // When a row is switched to "Redirect", jump focus to its URL box.
+  /* Modal events */
+  $("binModal").addEventListener("input", onModalChange);
+  $("binModal").addEventListener("change", function (e) {
     if (
       e.target.classList.contains("row-action") &&
       e.target.value === "redirect"
     ) {
-      updateRowStates();
-      e.target.closest(".block-row").querySelector(".row-ovr-url").focus();
+      const row = e.target.closest(".block-row");
+      row.classList.add("show-redirect");
+      row.querySelector(".row-ovr-url").focus();
     }
-    onAnyChange();
+    onModalChange();
   });
-
-  // Delete a row, confirming first if it has a real domain in it.
-  els.blockRows.addEventListener("click", function (e) {
-    const del = e.target.closest(".row-del");
-    if (!del) return;
-    const row = del.closest(".block-row");
-    const domain = normalizeDomain(row.querySelector(".row-domain").value);
-    if (domain && !window.confirm("Remove " + domain + " from the block list?")) {
+  $("binModal").addEventListener("click", function (e) {
+    if (e.target.closest(".row-del") && !e.target.closest(".bin-card-del")) {
+      const row = e.target.closest(".block-row");
+      if (!row) return;
+      const domain = normalizeDomain(row.querySelector(".row-domain").value);
+      if (domain && !window.confirm("Remove " + domain + "?")) return;
+      row.remove();
+      onModalChange();
       return;
     }
-    row.remove();
-    onAnyChange();
+    // Click outside the dialog (on the backdrop) closes it.
+    if (e.target === $("binModal")) closeModal();
   });
-
-  els.addSite.addEventListener("click", function () {
-    const row = buildRow("", {});
-    els.blockRows.appendChild(row);
+  $("modalAddSite").addEventListener("click", function () {
+    const row = buildRow();
+    $("modalRows").appendChild(row);
     row.querySelector(".row-domain").focus();
-    onAnyChange();
+    onModalChange();
+  });
+  $("modalPaste").addEventListener("click", function () {
+    const box = $("modalPasteBox");
+    box.hidden = !box.hidden;
+    if (!box.hidden) $("modalPasteText").focus();
+  });
+  $("modalPasteCancel").addEventListener("click", function () {
+    $("modalPasteBox").hidden = true;
+    $("modalPasteText").value = "";
+  });
+  $("modalPasteAdd").addEventListener("click", function () {
+    const rowsEl = $("modalRows");
+    const existing = new Set();
+    rowsEl.querySelectorAll(".row-domain").forEach(function (inp) {
+      const d = normalizeDomain(inp.value);
+      if (d) existing.add(d);
+    });
+    let added = 0;
+    parseBlocklist($("modalPasteText").value).forEach(function (d) {
+      if (existing.has(d)) return;
+      existing.add(d);
+      rowsEl.appendChild(buildRow({ domain: d, action: "default" }));
+      added++;
+    });
+    $("modalPasteBox").hidden = true;
+    $("modalPasteText").value = "";
+    onModalChange();
+    flashModal(added ? "Added " + added + " site(s)." : "No new domains.");
+  });
+  $("modalSave").addEventListener("click", saveModal);
+  $("modalDelete").addEventListener("click", deleteModalBin);
+  $("modalCancel").addEventListener("click", function () {
+    closeModal();
+  });
+  $("modalClose").addEventListener("click", function () {
+    closeModal();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && !$("binModal").hidden) closeModal();
   });
 
-  els.resetList.addEventListener("click", function () {
-    renderRows(DEFAULT_BLOCKLIST, {});
-    onAnyChange();
-    showStatus("List reset — remember to save.");
+  /* Appearance events */
+  $("appSave").addEventListener("click", saveAppearance);
+  $("appReset").addEventListener("click", function () {
+    APP_FIELDS.forEach(function (k) {
+      $(k).value = DEFAULT_CONFIG[k];
+    });
+    refreshAppDirty();
+    flashStatus("appStatus", "Reset — remember to Save.");
   });
-
-  els.save.addEventListener("click", save);
-
-  // Warn before leaving with unsaved edits.
-  window.addEventListener("beforeunload", function (e) {
-    if (isDirty) {
-      e.preventDefault();
-      e.returnValue = "";
-    }
-  });
+  document
+    .querySelector('.tabpane[data-pane="appearance"]')
+    .addEventListener("input", refreshAppDirty);
 
   load();
 })();

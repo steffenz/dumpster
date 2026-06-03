@@ -1,23 +1,24 @@
 /*
- * Service worker. Per-domain dynamic blocking engine.
+ * Service worker. Per-domain dynamic blocking engine over multiple bins.
  *
- * Each blocked domain has an effective action — its per-site override, or the
- * global default. Actions are applied independently, so the list can mix:
+ * Every active site resolves to an effective action (its override, else its
+ * bin's default). Actions apply independently, so the list can mix:
  *
- *   - "warning"  : no network rule; the content script shows the bar.
- *   - "redirect" : a DNR rule redirects to the site's custom URL (or default).
+ *   - "warning"  : no network rule; a dynamically-registered content script
+ *                  shows the bar.
+ *   - "redirect" : a DNR rule redirects to the site's URL (or its bin default).
  *   - "error"    : a DNR rule redirects to the bundled stop page.
  *
- * Content scripts cover the defaults via static manifest matches; user-added
- * domains are registered dynamically (once their host permission is granted).
- * Each content-script run self-gates on the per-domain action.
+ * There are no baked-in defaults, so every domain is user-supplied and its
+ * host permission is requested on demand. Content scripts are registered
+ * dynamically for the warning domains we have permission for.
  */
 
-importScripts("blocklist.data.js", "common.js");
+importScripts("common.js");
 
-const USER_SCRIPT_ID = "ds-user-warning";
+const WARN_SCRIPT_ID = "ds-warning";
 
-// A full chrome-extension:// URL. Using `redirect.url` (not `redirect.extensionPath`)
+// A full chrome-extension:// URL. Using `redirect.url` (not `extensionPath`)
 // because extensionPath rejects the "?domain=" query string we need.
 function stopPageUrl(domain) {
   return (
@@ -28,19 +29,19 @@ function stopPageUrl(domain) {
 }
 
 async function syncDynamicRules(config) {
-  const list = config.enabled ? config.blocklist : [];
+  const resolved = resolveBlocklist(config);
   const dynamic = [];
   let id = 1;
 
-  for (const d of list) {
-    const action = effectiveAction(d, config);
-    if (action === "redirect") {
+  Object.keys(resolved).forEach(function (d) {
+    const r = resolved[d];
+    if (r.action === "redirect") {
       // normalizeUrl guarantees a scheme — an unschemed URL would make the rule
       // invalid and cause updateDynamicRules to reject the WHOLE batch.
-      const url = normalizeUrl(effectiveRedirectUrl(d, config));
+      const url = normalizeUrl(r.url);
       if (!url) {
-        console.warn("[Drittsleipt] skipping redirect for", d, "— no URL");
-        continue;
+        console.warn("[Dumpster] skipping redirect for", d, "— no URL");
+        return;
       }
       dynamic.push({
         id: id++,
@@ -48,19 +49,16 @@ async function syncDynamicRules(config) {
         action: { type: "redirect", redirect: { url: url } },
         condition: { requestDomains: [d], resourceTypes: ["main_frame"] }
       });
-    } else if (action === "error") {
+    } else if (r.action === "error") {
       dynamic.push({
         id: id++,
         priority: 1,
-        action: {
-          type: "redirect",
-          redirect: { url: stopPageUrl(d) }
-        },
+        action: { type: "redirect", redirect: { url: stopPageUrl(d) } },
         condition: { requestDomains: [d], resourceTypes: ["main_frame"] }
       });
     }
     // "warning": no network rule — handled by the content script.
-  }
+  });
 
   const existing = await DS_API.declarativeNetRequest.getDynamicRules();
   try {
@@ -71,37 +69,39 @@ async function syncDynamicRules(config) {
       addRules: dynamic
     });
     console.debug(
-      "[Drittsleipt] applied",
+      "[Dumpster] applied",
       dynamic.length,
       "dynamic rule(s):",
       dynamic.map(function (r) {
-        return r.condition.requestDomains[0] + " → " + (r.action.redirect.url || "stop page");
+        return r.condition.requestDomains[0] + " → " + r.action.redirect.url;
       })
     );
   } catch (e) {
     console.error(
-      "[Drittsleipt] updateDynamicRules failed — no rules applied:",
+      "[Dumpster] updateDynamicRules failed — no rules applied:",
       e,
       dynamic
     );
   }
 }
 
-/** Register the warning-bar content script for user-added domains we can access. */
-async function syncUserContentScripts(config) {
+/** Register the warning-bar content script for warning domains we can access. */
+async function syncContentScripts(config) {
   if (!DS_API.scripting || !DS_API.scripting.registerContentScripts) return;
 
   try {
-    await DS_API.scripting.unregisterContentScripts({ ids: [USER_SCRIPT_ID] });
+    await DS_API.scripting.unregisterContentScripts({ ids: [WARN_SCRIPT_ID] });
   } catch (_) {
     /* not registered yet — fine. */
   }
 
-  const userDomains = userAddedDomains(
-    config.enabled ? config.blocklist : []
-  );
+  const resolved = resolveBlocklist(config);
+  const warnDomains = Object.keys(resolved).filter(function (d) {
+    return resolved[d].action === "warning";
+  });
+
   const granted = [];
-  for (const d of userDomains) {
+  for (const d of warnDomains) {
     try {
       if (await hasDomainPermission(d)) granted.push(d);
     } catch (_) {
@@ -112,9 +112,9 @@ async function syncUserContentScripts(config) {
 
   await DS_API.scripting.registerContentScripts([
     {
-      id: USER_SCRIPT_ID,
+      id: WARN_SCRIPT_ID,
       matches: granted.map(originPattern),
-      js: ["src/blocklist.data.js", "src/common.js", "src/content.js"],
+      js: ["src/common.js", "src/content.js"],
       runAt: "document_start",
       allFrames: false
     }
@@ -125,10 +125,10 @@ async function applyState() {
   const config = await getConfig();
 
   await syncDynamicRules(config);
-  await syncUserContentScripts(config);
+  await syncContentScripts(config);
 
   try {
-    await DS_API.action.setBadgeBackgroundColor({ color: "#dc2626" });
+    await DS_API.action.setBadgeBackgroundColor({ color: "#2E7D32" });
     await DS_API.action.setBadgeText({ text: config.enabled ? "" : "off" });
   } catch (_) {
     /* action API unavailable in some contexts; ignore. */
@@ -154,8 +154,7 @@ DS_API.storage.onChanged.addListener(function (changes, area) {
   }
 });
 
-// Granting/revoking optional host permissions also re-applies (so newly
-// permitted user domains get their content script registered immediately).
+// Granting/revoking optional host permissions also re-applies.
 if (DS_API.permissions && DS_API.permissions.onAdded) {
   DS_API.permissions.onAdded.addListener(function () {
     applyState();
