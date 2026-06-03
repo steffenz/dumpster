@@ -15,7 +15,7 @@ all at once. Bins can be toggled on and off independently.
 
 Dumpster ships **empty** — you create bins and **paste in your own lists** of
 domains. A ready-to-paste Schibsted starter list lives in
-[`presets/schibsted.txt`](presets/schibsted.txt) (VG, Aftenposten, Finn,
+[`docs/presets/schibsted.txt`](docs/presets/schibsted.txt) (VG, Aftenposten, Finn,
 Aftonbladet, SvD, Blocket, Tori, DBA, and more).
 
 The wording **and button labels** on the warning bar and stop page are editable
@@ -65,7 +65,7 @@ Everything happens in the admin panel (popup → **Manage bins & settings**):
    from the dropdown on each row.
 4. **Save changes** on that bin.
 
-To block the Schibsted ecosystem, open [`presets/schibsted.txt`](presets/schibsted.txt),
+To block the Schibsted ecosystem, open [`docs/presets/schibsted.txt`](docs/presets/schibsted.txt),
 copy it, make a bin, and paste it in.
 
 When you save, the extension asks for host permission for the bin's domains (one
@@ -92,7 +92,8 @@ never "all sites." Blocking rules are created at runtime with
 | `src/popup.html/js` | Toolbar quick-toggles (master on/off + per-bin). |
 | `src/blocked.html/js` | The custom stop page. |
 | `src/pages.css` | Shared styling for the pages above. |
-| `presets/schibsted.txt` | Copy-paste starter list of Schibsted domains. |
+| `docs/` | The GitHub Pages site (`index.html`) + `presets/*.txt` lists. |
+| `docs/presets/schibsted.txt` | Copy-paste starter list of Schibsted domains. |
 | `assets/icon.svg` | Editable icon master (the flaming dumpster). |
 | `tools/render_icons.sh` | Rasterizes the SVG to `icons/icon{16,48,128}.png` (`./tools/render_icons.sh`). |
 

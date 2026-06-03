@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="512" height="512">
+  <!--
+    Dumpster icon — editable master. A green dumpster with flames rising out of
+    it: the "dumpster fire". TRANSPARENT background so it sits on the toolbar, the
+    red warning banner, the stop page, and the admin panel alike. A soft white
+    halo keeps it legible on dark/colored backgrounds.
+    Re-rasterize with: tools/render_icons.sh
+  -->
+  <defs>
+    <linearGradient id="bin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4CAF50"/>
+      <stop offset="1" stop-color="#2E7D32"/>
+    </linearGradient>
+    <linearGradient id="fire" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFA22B"/>
+      <stop offset="1" stop-color="#E5392B"/>
+    </linearGradient>
+    <linearGradient id="fireInner" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFE14D"/>
+      <stop offset="1" stop-color="#FF8A1F"/>
+    </linearGradient>
+    <filter id="halo" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="0" stdDeviation="2.4"
+        flood-color="#ffffff" flood-opacity="0.9"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#halo)">
+    <!-- Flames first; their bases are hidden behind the dumpster lip. -->
+    <g transform="translate(64 10) scale(3.2) translate(-12 -2)">
+      <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" fill="url(#fire)"/>
+    </g>
+    <g transform="translate(64 30) scale(1.9) translate(-12 -2)">
+      <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" fill="url(#fireInner)"/>
+    </g>
+
+    <!-- Wheels (peek out below the body). -->
+    <circle cx="46" cy="107" r="6.5" fill="#263126"/>
+    <circle cx="82" cy="107" r="6.5" fill="#263126"/>
+
+    <!-- Dumpster body. -->
+    <path d="M27 74 L101 74 L93 104 L35 104 Z" fill="url(#bin)"/>
+    <path d="M33 89 H95" stroke="#256A2B" stroke-width="3" stroke-linecap="round"/>
+
+    <!-- Front lip / rim, slightly wider than the body, with a top highlight. -->
+    <rect x="20" y="62" width="88" height="13" rx="4" fill="#2E7D32"/>
+    <rect x="20" y="62" width="88" height="5" rx="2.5" fill="#46A24D"/>
+  </g>
+</svg>

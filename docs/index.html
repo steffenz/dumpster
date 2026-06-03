@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dumpster — bin the sites you're trying to quit</title>
+    <meta name="description" content="A browser extension that tosses the sites you're trying to quit into bins — warn, redirect, or replace them. Built out of spite for Schibsted. Open source." />
+    <meta name="theme-color" content="#0e120d" />
+    <meta property="og:title" content="Dumpster" />
+    <meta property="og:description" content="Bin the sites you're trying to quit. Warn, redirect, or replace them. Built out of spite." />
+    <meta property="og:image" content="icon.png" />
+    <meta property="og:type" content="website" />
+    <link rel="icon" href="icon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Anton&family=Hanken+Grotesk:wght@400;500;700;800&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0e120d;
+        --bg-2: #141a11;
+        --card: #181f14;
+        --card-2: #1d2618;
+        --line: #2b3524;
+        --ink: #eef1e8;
+        --ink-soft: #9aa791;
+        --green: #5cc463;
+        --green-d: #2e7d32;
+        --fire: #ff8c2b;
+        --fire-2: #e5392b;
+        --yellow: #ffc529;
+        --red: #ef4444;
+        --display: "Anton", "Arial Narrow", sans-serif;
+        --body: "Hanken Grotesk", system-ui, sans-serif;
+        --mono: "JetBrains Mono", ui-monospace, monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--body);
+        font-size: 17px;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+      /* faint grain over everything */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        pointer-events: none;
+        opacity: 0.04;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      }
+      a {
+        color: inherit;
+      }
+      .wrap {
+        width: min(1080px, 92vw);
+        margin: 0 auto;
+      }
+
+      /* hazard stripe */
+      .hazard {
+        height: 12px;
+        background: repeating-linear-gradient(
+          -45deg,
+          var(--yellow) 0 22px,
+          #14180f 22px 44px
+        );
+        opacity: 0.9;
+      }
+
+      /* ---------- nav ---------- */
+      nav {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        backdrop-filter: blur(10px);
+        background: color-mix(in srgb, var(--bg) 78%, transparent);
+        border-bottom: 1px solid var(--line);
+      }
+      .nav-in {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 12px 0;
+      }
+      .nav-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: var(--display);
+        font-size: 22px;
+        letter-spacing: 0.04em;
+      }
+      .nav-brand img {
+        width: 30px;
+        height: 30px;
+      }
+      .nav-links {
+        margin-left: auto;
+        display: flex;
+        gap: 22px;
+        font-weight: 600;
+        font-size: 15px;
+      }
+      .nav-links a {
+        text-decoration: none;
+        color: var(--ink-soft);
+        transition: color 0.15s;
+      }
+      .nav-links a:hover {
+        color: var(--ink);
+      }
+      @media (max-width: 620px) {
+        .nav-links {
+          display: none;
+        }
+      }
+
+      /* ---------- hero ---------- */
+      .hero {
+        position: relative;
+        text-align: center;
+        padding: 78px 0 64px;
+        overflow: hidden;
+      }
+      .hero::before {
+        content: "";
+        position: absolute;
+        top: -120px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 680px;
+        height: 680px;
+        max-width: 120vw;
+        background: radial-gradient(
+          circle,
+          rgba(255, 140, 43, 0.22),
+          rgba(229, 57, 43, 0.1) 38%,
+          transparent 66%
+        );
+        filter: blur(8px);
+        pointer-events: none;
+      }
+      .hero-icon {
+        width: 132px;
+        height: 132px;
+        position: relative;
+        animation: rise 0.7s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+        filter: drop-shadow(0 8px 28px rgba(255, 140, 43, 0.3));
+      }
+      .hero h1 {
+        font-family: var(--display);
+        font-weight: 400;
+        font-size: clamp(64px, 15vw, 168px);
+        line-height: 0.9;
+        letter-spacing: 0.01em;
+        margin: 14px 0 0;
+        background: linear-gradient(180deg, #fff 30%, #ffd9a0 70%, var(--fire));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        animation: rise 0.7s 0.05s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+      }
+      .hero .lead {
+        font-size: clamp(18px, 2.4vw, 23px);
+        font-weight: 500;
+        color: var(--ink);
+        max-width: 30ch;
+        margin: 18px auto 0;
+        animation: rise 0.7s 0.12s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+      }
+      .hero .spite {
+        color: var(--ink-soft);
+        max-width: 56ch;
+        margin: 20px auto 0;
+        animation: rise 0.7s 0.18s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+      }
+      .hero .spite b {
+        color: var(--green);
+      }
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(16px);
+        }
+      }
+      @keyframes flicker {
+        0%, 100% {
+          filter: drop-shadow(0 8px 28px rgba(255, 140, 43, 0.3));
+        }
+        50% {
+          filter: drop-shadow(0 8px 38px rgba(255, 140, 43, 0.55));
+        }
+      }
+      .hero-icon {
+        animation: rise 0.7s cubic-bezier(0.2, 0.9, 0.3, 1) both,
+          flicker 2.8s 0.8s ease-in-out infinite;
+      }
+
+      /* ---------- buttons ---------- */
+      .cta {
+        display: flex;
+        gap: 14px;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: 34px;
+        animation: rise 0.7s 0.24s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        font-family: var(--body);
+        font-weight: 800;
+        font-size: 16px;
+        text-decoration: none;
+        padding: 15px 26px;
+        border-radius: 13px;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: transform 0.12s, box-shadow 0.18s, background 0.15s;
+      }
+      .btn-primary {
+        color: #11140f;
+        background: linear-gradient(180deg, var(--green), var(--green-d));
+        box-shadow: 0 10px 26px rgba(92, 196, 99, 0.28);
+      }
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 16px 34px rgba(92, 196, 99, 0.4);
+      }
+      .btn-ghost {
+        color: var(--ink);
+        background: var(--card);
+        border-color: var(--line);
+      }
+      .btn-ghost:hover {
+        transform: translateY(-2px);
+        background: var(--card-2);
+      }
+
+      .stores {
+        margin-top: 26px;
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        flex-wrap: wrap;
+        animation: rise 0.7s 0.3s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+      }
+      .chip {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--ink-soft);
+        padding: 7px 14px;
+        border: 1px dashed var(--line);
+        border-radius: 999px;
+      }
+      .chip span {
+        color: var(--yellow);
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+      }
+
+      /* ---------- sections ---------- */
+      section.block {
+        padding: 72px 0;
+      }
+      .eyebrow {
+        font-family: var(--mono);
+        font-size: 13px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--green);
+        margin: 0 0 10px;
+      }
+      h2 {
+        font-family: var(--display);
+        font-weight: 400;
+        font-size: clamp(34px, 5vw, 54px);
+        line-height: 1;
+        letter-spacing: 0.01em;
+        margin: 0 0 28px;
+      }
+
+      /* steps */
+      .steps {
+        list-style: none;
+        counter-reset: s;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 14px;
+      }
+      .steps li {
+        counter-increment: s;
+        position: relative;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-left: 3px solid var(--green);
+        border-radius: 12px;
+        padding: 18px 20px 18px 64px;
+      }
+      .steps li::before {
+        content: counter(s);
+        position: absolute;
+        left: 18px;
+        top: 16px;
+        width: 30px;
+        height: 30px;
+        display: grid;
+        place-items: center;
+        font-family: var(--display);
+        font-size: 17px;
+        color: #11140f;
+        background: var(--green);
+        border-radius: 8px;
+      }
+      .steps b {
+        color: var(--ink);
+      }
+      .steps code,
+      kbd {
+        font-family: var(--mono);
+        font-size: 0.85em;
+        background: #0a0d08;
+        border: 1px solid var(--line);
+        padding: 1px 7px;
+        border-radius: 5px;
+        color: var(--green);
+      }
+      .note {
+        margin-top: 18px;
+        color: var(--ink-soft);
+        font-size: 15px;
+      }
+
+      /* presets */
+      .preset-intro {
+        max-width: 64ch;
+        color: var(--ink-soft);
+        margin: -10px 0 30px;
+      }
+      .preset {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        overflow: hidden;
+      }
+      .preset-head {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        padding: 20px 22px 0;
+      }
+      .preset-head h3 {
+        font-family: var(--display);
+        font-weight: 400;
+        font-size: 30px;
+        letter-spacing: 0.02em;
+        margin: 0;
+      }
+      .preset-count {
+        font-family: var(--mono);
+        font-size: 13px;
+        color: var(--green);
+      }
+      .preset-blurb {
+        padding: 6px 22px 16px;
+        color: var(--ink-soft);
+        font-size: 15px;
+      }
+      .preset-box {
+        position: relative;
+        margin: 0 22px 22px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #0a0d08;
+      }
+      .preset-box pre {
+        margin: 0;
+        padding: 16px 18px;
+        max-height: 230px;
+        overflow: auto;
+        font-family: var(--mono);
+        font-size: 13.5px;
+        line-height: 1.7;
+        color: var(--ink);
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+      .copy {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        font-family: var(--body);
+        font-weight: 700;
+        font-size: 13px;
+        color: #11140f;
+        background: var(--green);
+        border: none;
+        border-radius: 8px;
+        padding: 8px 14px;
+        cursor: pointer;
+        transition: background 0.15s, transform 0.1s;
+      }
+      .copy:hover {
+        transform: translateY(-1px);
+      }
+      .copy.copied {
+        background: var(--yellow);
+      }
+
+      .contribute {
+        margin-top: 26px;
+        background: var(--card-2);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 22px 24px;
+        color: var(--ink-soft);
+      }
+      .contribute b {
+        color: var(--ink);
+      }
+      .contribute code {
+        font-family: var(--mono);
+        font-size: 0.85em;
+        color: var(--green);
+      }
+
+      footer {
+        border-top: 1px solid var(--line);
+        padding: 36px 0 60px;
+        color: var(--ink-soft);
+        font-size: 14px;
+      }
+      .foot-in {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .foot-in a {
+        color: var(--green);
+        font-weight: 600;
+        text-decoration: none;
+      }
+      .foot-in .sep {
+        opacity: 0.4;
+      }
+      .foot-brand {
+        font-family: var(--display);
+        letter-spacing: 0.04em;
+        color: var(--ink);
+        margin-right: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <nav>
+      <div class="wrap nav-in">
+        <span class="nav-brand"><img src="icon.svg" alt="" /> DUMPSTER</span>
+        <span class="nav-links">
+          <a href="#install">Install</a>
+          <a href="#presets">Presets</a>
+          <a id="navRepo" href="#">GitHub</a>
+        </span>
+      </div>
+    </nav>
+    <div class="hazard"></div>
+
+    <header class="hero">
+      <div class="wrap">
+        <img class="hero-icon" src="icon.svg" alt="Dumpster logo" />
+        <h1>DUMPSTER</h1>
+        <p class="lead">Bin the sites you're trying to quit.</p>
+        <p class="spite">
+          A browser extension that tosses the sites you keep slipping back to into
+          <b>bins</b> — then warns you, redirects you, or replaces them with a stop
+          page. Built out of pure spite for <b>Schibsted</b> 😈, the big evil
+          media-and-marketplace behemoth with its claws in half your open tabs.
+          Open source, no tracking, no nonsense.
+        </p>
+
+        <div class="cta">
+          <a class="btn btn-primary" id="downloadBtn" href="#install">⬇ Download ZIP</a>
+          <a class="btn btn-ghost" id="repoBtn" href="#">View on GitHub</a>
+        </div>
+
+        <div class="stores">
+          <span class="chip">Chrome Web Store <span>TBA</span></span>
+          <span class="chip">Firefox Add-ons <span>TBA</span></span>
+          <span class="chip">Edge Add-ons <span>TBA</span></span>
+        </div>
+      </div>
+    </header>
+
+    <div class="hazard"></div>
+
+    <section class="block" id="install">
+      <div class="wrap">
+        <p class="eyebrow">Load it in a minute</p>
+        <h2>Install</h2>
+        <ol class="steps">
+          <li><b>Download the ZIP</b> above and unzip it somewhere permanent — not your Downloads folder.</li>
+          <li>Open <code>chrome://extensions</code> (or <code>brave://</code>, <code>edge://</code>, <code>vivaldi://extensions</code>).</li>
+          <li>Turn on <b>Developer mode</b> (top-right toggle).</li>
+          <li>Click <b>Load unpacked</b> and pick the unzipped folder — the one with <code>manifest.json</code>.</li>
+          <li>Pin the icon, open it, make a bin, and paste in a list. <a href="#presets" style="color:var(--green);font-weight:700;text-decoration:none">Grab a preset ↓</a></li>
+        </ol>
+        <p class="note">
+          It loads as a developer/unpacked extension and stays installed across
+          restarts. One-click store versions are <b>TBA</b> — see the chips above.
+        </p>
+      </div>
+    </section>
+
+    <div class="hazard"></div>
+
+    <section class="block" id="presets">
+      <div class="wrap">
+        <p class="eyebrow">Copy · Paste · Block</p>
+        <h2>Presets</h2>
+        <p class="preset-intro">
+          Curated lists, ready to paste into a bin. Copy one, make a new bin in the
+          extension, hit <b>Paste domains</b>, and you're done.
+        </p>
+
+        <div id="presetList"></div>
+
+        <div class="contribute">
+          <b>Got your own pile to take out?</b> Contributions are very welcome.
+          Drop a <code>.txt</code> file (one domain per line) into the
+          <code>presets/</code> folder and open a pull request — we'll add it here.
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="wrap foot-in">
+        <span class="foot-brand">DUMPSTER</span>
+        <a id="footRepo" href="#">GitHub</a>
+        <span class="sep">·</span>
+        <span>Open source</span>
+        <span class="sep">·</span>
+        <span>Built out of spite 🔥</span>
+      </div>
+    </footer>
+
+    <script>
+      // Figure out the repo + download URLs from the GitHub Pages address.
+      // user.github.io/<repo>/  ->  github.com/user/<repo>
+      (function () {
+        const host = location.hostname;
+        const isPages = host.endsWith("github.io");
+        const user = isPages ? host.split(".")[0] : null;
+        const repo = isPages
+          ? location.pathname.split("/").filter(Boolean)[0] || "dumpster"
+          : "dumpster";
+        const repoUrl = user
+          ? "https://github.com/" + user + "/" + repo
+          : "https://github.com/your-username/dumpster";
+
+        ["repoBtn", "navRepo", "footRepo"].forEach(function (id) {
+          document.getElementById(id).href = repoUrl;
+        });
+
+        // Point "Download ZIP" at the real default branch. Start with a safe
+        // guess, then upgrade via the API (handles main vs master vs anything).
+        const dl = document.getElementById("downloadBtn");
+        dl.href = repoUrl + "/archive/refs/heads/main.zip";
+        if (user) {
+          fetch("https://api.github.com/repos/" + user + "/" + repo)
+            .then(function (r) {
+              return r.ok ? r.json() : null;
+            })
+            .then(function (info) {
+              if (info && info.default_branch) {
+                dl.href =
+                  repoUrl + "/archive/refs/heads/" + info.default_branch + ".zip";
+              }
+            })
+            .catch(function () {
+              /* keep the fallback */
+            });
+        }
+      })();
+
+      // Presets: add an entry here when you add a .txt to /presets.
+      const PRESETS = [
+        {
+          title: "Schibsted",
+          file: "presets/schibsted.txt",
+          blurb:
+            "The whole tentacled empire — VG, Aftenposten, E24, BT, Finn, Aftonbladet, SvD, Omni, Blocket, Tori, Oikotie, DBA, Bilbasen, Prisjakt, Lendo and friends."
+        }
+      ];
+
+      const list = document.getElementById("presetList");
+
+      PRESETS.forEach(function (p, i) {
+        const el = document.createElement("div");
+        el.className = "preset";
+        if (i > 0) el.style.marginTop = "18px";
+        el.innerHTML =
+          '<div class="preset-head"><h3>' +
+          p.title +
+          '</h3><span class="preset-count"></span></div>' +
+          '<p class="preset-blurb">' +
+          p.blurb +
+          "</p>" +
+          '<div class="preset-box"><button class="copy">Copy</button><pre>Loading…</pre></div>';
+        list.appendChild(el);
+
+        const pre = el.querySelector("pre");
+        const count = el.querySelector(".preset-count");
+        const btn = el.querySelector(".copy");
+
+        fetch(p.file)
+          .then(function (r) {
+            if (!r.ok) throw new Error("not found");
+            return r.text();
+          })
+          .then(function (text) {
+            const domains = text
+              .split(/\r?\n/)
+              .map(function (s) {
+                return s.trim();
+              })
+              .filter(Boolean);
+            pre.textContent = domains.join("\n");
+            count.textContent = domains.length + " domains";
+          })
+          .catch(function () {
+            pre.textContent =
+              "Couldn't load the list here — view it in the repo: " + p.file;
+            btn.style.display = "none";
+          });
+
+        btn.addEventListener("click", function () {
+          navigator.clipboard.writeText(pre.textContent).then(function () {
+            btn.textContent = "Copied ✓";
+            btn.classList.add("copied");
+            setTimeout(function () {
+              btn.textContent = "Copy";
+              btn.classList.remove("copied");
+            }, 1600);
+          });
+        });
+      });
+    </script>
+  </body>
+</html>
